@@ -34,7 +34,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const { query } = summary;
 
   // Определение расшифровки названия кода ОКЭД
-  const cleanCode = query.oked_code.trim();
+  const cleanCode = query.oked_code.trim().replace(/,/g, '.').replace(/\\s+/g, '');
   const orleuCheck = checkOrleuEligibility(cleanCode);
 
   let okedName = query.oked_code;
@@ -67,6 +67,14 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const isIskerPass = !isRepCity && !isExcluded23 && !isExcluded24 && Boolean(
     iskerCheck?.matched && (!query.district_name || iskerCheck.districtFound)
   );
+
+  const iskerNegativeReason = isRepCity
+    ? 'Программа «Іскер аймақ» не применяется к городам республиканского значения.'
+    : isExcluded23 || isExcluded24
+      ? `ОКЭД ${cleanCode} исключён из программы «Іскер аймақ» по действующим ограничениям.`
+      : (iskerCheck && !iskerCheck.matched
+          ? iskerCheck.reason
+          : 'Для подтверждения соответствия программе «Іскер аймақ» требуется выбрать конкретный регион и район/город.');
 
   const isTradeOked = cleanCode.startsWith('46') || cleanCode.startsWith('47') || cleanCode.startsWith('68.20');
   // В городах республиканского значения (Астана, Алматы, Шымкент) субсидирование торговли НЕ РАБОТАЕТ!
@@ -175,7 +183,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `NC_Decision_Report_${query.oked_code}_${query.location_name || 'RK'}.docx`;
+      link.download = `NC_Decision_Report_${cleanCode}_${query.location_name || 'RK'}.docx`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -190,7 +198,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
 *${t.subtitle} (${new Date().toLocaleDateString(language === 'kk' ? 'kk-KZ' : 'ru-RU')})*
 
 ### ${t.paramsTitle}
-- **${t.okedLabel}** \`${query.oked_code}\` (${okedName})
+- **${t.okedLabel}** \`${cleanCode}\` (${okedName})
 - **${language === 'kk' ? 'Өңір:' : 'Регион:'}** ${query.region_name || query.location_name || (language === 'kk' ? 'Көрсетілмеген' : 'Не указан')}
 ${query.district_name ? `- **${language === 'kk' ? 'Аудан / қала:' : 'Район / город:'}** ${query.district_name}` : ''}
 - **${t.financierLabel}** ${t.financierValue}
@@ -198,7 +206,7 @@ ${query.district_name ? `- **${language === 'kk' ? 'Аудан / қала:' : '�
 ---
 
 ### ${t.programsTitle}
-${passedCorePrograms.map((p, i) => `
+${!isIskerPass && query.region_id ? `> **«Іскер аймақ»:** ${iskerNegativeReason}\n\n` : ''}${passedCorePrograms.map((p, i) => `
 #### ${i + 1}. ${p.title}
 - **${language === 'kk' ? 'Санаты:' : 'Категория:'}** ${p.category}
 - **${t.limitLabel}** ${p.limit}
@@ -238,7 +246,7 @@ ${passedCorePrograms.map((p, i) => `
                 {t.title}
               </h2>
               <span className={`text-xs font-mono truncate block ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
-                OKED: {query.oked_code} · {query.region_name || query.location_name || (language === 'kk' ? 'Қазақстан' : language === 'en' ? 'Kazakhstan' : language === 'zh' ? '哈萨克斯坦' : 'Казахстан')}{query.district_name ? ` · ${query.district_name}` : ''}
+                OKED: {cleanCode} · {query.region_name || query.location_name || (language === 'kk' ? 'Қазақстан' : language === 'en' ? 'Kazakhstan' : language === 'zh' ? '哈萨克斯坦' : 'Казахстан')}{query.district_name ? ` · ${query.district_name}` : ''}
               </span>
             </div>
           </div>
@@ -269,7 +277,7 @@ ${passedCorePrograms.map((p, i) => `
                 {t.okedLabel}
               </span>
               <div className={`font-mono font-bold text-sm ${isLight ? 'text-neutral-900' : 'text-[#00E5FF]'}`}>
-                {query.oked_code}
+                {cleanCode}
               </div>
               <span className={`text-[11px] block leading-tight ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
                 {okedName}
@@ -332,6 +340,24 @@ ${passedCorePrograms.map((p, i) => `
                       : language === 'zh'
                         ? '根据哈萨克斯坦“达姆”基金官方规程，针对国内商业贸易领域贷款（OKED代码 46, 47, 68.20）的利率贴息政策在直辖市（阿斯塔纳、阿拉木图、奇姆肯特）不予执行。贸易贴息政策仅在各州、单一产业城市及农村地区实施。直辖市内的商贸企业可申请达姆第一担保基金（最高85%的抵押贷款担保），但无法享受贷款利息贴息。'
                         : `По официальному регламенту АО «ФРП «Даму» субсидирование процентной ставки по кредитам в сфере внутренней торговли (ОКЭД 46, 47, 68.20) в городах Астана, Алматы и Шымкент НЕ ПРЕДОСТАВЛЯЕТСЯ. Программа субсидирования торговли действует исключительно в областях, моногородах и сельских населенных пунктах. Для торговых предприятий в городах республиканского значения доступно гарантирование займов (Гарантийный фонд 1 Даму до 85%), но не субсидирование ставки.`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isIskerPass && query.region_id && (
+            <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-3 ${
+              isLight
+                ? 'bg-slate-50 border-slate-300 text-slate-800'
+                : 'bg-[#0B1020] border-[#334155] text-slate-300'
+            }`}>
+              <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${isLight ? 'text-slate-600' : 'text-amber-400'}`} />
+              <div className="space-y-1">
+                <strong className={`block font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
+                  {language === 'kk' ? '«Іскер аймақ» бойынша сәйкестік расталмады' : language === 'en' ? 'Isker Aymak eligibility not confirmed' : language === 'zh' ? '未确认符合“Іскер аймақ”条件' : '«Іскер аймақ»: не соответствует выбранным параметрам'}
+                </strong>
+                <p className="text-[11px] leading-relaxed">
+                  {iskerNegativeReason}
                 </p>
               </div>
             </div>
