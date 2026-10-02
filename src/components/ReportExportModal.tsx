@@ -327,6 +327,39 @@ ${excludedProgramRows.map((p, i) => `
               </div>
             )}
           </div>
+
+          {excludedProgramRows.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className={'text-xs sm:text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5 ' + (isLight ? 'text-neutral-900' : 'text-rose-300')}>
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{language === 'kk' ? 'Сәйкес келмейтін бағдарламалар' : language === 'en' ? 'Not applicable programs' : language === 'zh' ? '不适用的项目' : 'Не подходят по текущим параметрам'}</span>
+                </h3>
+                <span className={'text-[11px] font-mono ' + (isLight ? 'text-neutral-500' : 'text-[#94A3B8]')}>{excludedProgramRows.length}</span>
+              </div>
+              <div className="space-y-2">
+                {excludedProgramRows.map((prog) => (
+                  <div key={prog.id} className={'p-3.5 rounded-xl border ' + (isLight ? 'bg-rose-50/50 border-rose-200' : 'bg-rose-950/15 border-rose-900/50')}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className={'font-semibold text-xs sm:text-sm ' + (isLight ? 'text-neutral-900' : 'text-[#F4F7FF]')}>{prog.title}</div>
+                        <div className={'text-[10px] font-mono mt-0.5 ' + (isLight ? 'text-neutral-500' : 'text-slate-500')}>{prog.instrument}</div>
+                      </div>
+                      <span className={'text-[10px] font-mono shrink-0 ' + (isLight ? 'text-neutral-500' : 'text-slate-500')}>{prog.sourceId}</span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {prog.reasons.map((reason, idx) => (
+                        <div key={idx} className={'text-[11px] leading-relaxed flex items-start gap-2 ' + (isLight ? 'text-rose-800' : 'text-rose-300')}>
+                          <span className="font-bold shrink-0">✕</span>
+                          <span>{reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Подвал отчёта */}
