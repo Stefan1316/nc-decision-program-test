@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserQuery } from '../types/damu';
 import { KAZAKHSTAN_TERRITORIES, TerritoryOption } from '../data/kazakhstanTerritories';
+import { getDistrictsByRegion, MioDistrictItem } from '../data/kazakhstanDistricts';
 import { Search, MapPin, ChevronDown, Check, AlertTriangle, SlidersHorizontal, Building2, Coins, Briefcase } from 'lucide-react';
 import { ThemeMode, Language, translations } from '../i18n/translations';
 
@@ -23,10 +24,13 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
 }) => {
   const [isTerritoryDropdownOpen, setIsTerritoryDropdownOpen] = useState(false);
   const [territorySearchTerm, setTerritorySearchTerm] = useState('');
+  const [isDistrictDropdownOpen, setIsDistrictDropdownOpen] = useState(false);
+  const [districtSearchTerm, setDistrictSearchTerm] = useState('');
   
   // Дополнительные параметры
   const [showAdvanced, setShowAdvanced] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const districtDropdownRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language].form;
   const isLight = theme === 'light';
@@ -37,35 +41,83 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsTerritoryDropdownOpen(false);
       }
+      if (districtDropdownRef.current && !districtDropdownRef.current.contains(event.target as Node)) {
+        setIsDistrictDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Фильтрация территорий
-  const filteredTerritories = KAZAKHSTAN_TERRITORIES.filter(item => 
+  // Единый сценарий территории: сначала регион / город республиканского значения,
+  // затем (для области) конкретный район или город из официальной матрицы МИО.
+  const primaryTerritories = KAZAKHSTAN_TERRITORIES.filter(item =>
+    item.group === 'Города республиканского значения' ||
+    item.group === 'Области Республики Казахстан'
+  );
+
+  const filteredTerritories = primaryTerritories.filter(item =>
     item.name.toLowerCase().includes(territorySearchTerm.toLowerCase()) ||
     item.typeLabel.toLowerCase().includes(territorySearchTerm.toLowerCase()) ||
     item.group.toLowerCase().includes(territorySearchTerm.toLowerCase())
   );
 
-  const selectedTerritory = KAZAKHSTAN_TERRITORIES.find(
-    item => item.name.toLowerCase().trim() === query.location_name.toLowerCase().trim() && item.level === query.location_level
+  const selectedTerritory = KAZAKHSTAN_TERRITORIES.find(item =>
+    item.id === query.region_id ||
+    item.name.toLowerCase().trim() === (query.region_name || (query.location_level !== 'district' ? query.location_name : '')).toLowerCase().trim()
+  );
+
+  const districtOptions: MioDistrictItem[] = query.region_id && selectedTerritory?.level === 'region'
+    ? getDistrictsByRegion(query.region_id, query.region_name || selectedTerritory.name)
+    : [];
+
+  const filteredDistricts = districtOptions.filter(item => {
+    const q = districtSearchTerm.toLowerCase().trim();
+    if (!q) return true;
+    return item.name.toLowerCase().includes(q) ||
+      item.typeLabel.toLowerCase().includes(q) ||
+      item.center.toLowerCase().includes(q);
+  });
+
+  const selectedDistrict = districtOptions.find(item =>
+    item.id === query.district_id ||
+    item.name.toLowerCase().trim() === (query.district_name || '').toLowerCase().trim()
   );
 
   const handleSelectTerritory = (selected: TerritoryOption) => {
-    const isMonotown = selected.typeLabel.toLowerCase().includes('моногород') || 
-      ['экибастуз', 'рудный', 'темиртау', 'риддер', 'жанатас', 'степногорск'].includes(selected.name.toLowerCase());
-
-    const isRepCity = ['алматы', 'астана', 'шымкент'].includes(selected.name.toLowerCase());
+    const isRepCity = ['almaty-city', 'astana-city', 'shymkent-city'].includes(selected.id);
 
     onChange({
       location_name: selected.name,
       location_level: selected.level,
-      settlement_type: isMonotown ? 'monotown' : isRepCity ? 'republican_city' : query.settlement_type || 'any'
+      region_id: selected.id,
+      region_name: selected.name,
+      district_id: '',
+      district_name: '',
+      settlement_type: isRepCity ? 'republican_city' : 'any'
     });
     setIsTerritoryDropdownOpen(false);
     setTerritorySearchTerm('');
+    setIsDistrictDropdownOpen(false);
+    setDistrictSearchTerm('');
+  };
+
+  const handleSelectDistrict = (district: MioDistrictItem) => {
+    const settlementType = district.type === 'monotown'
+      ? 'monotown'
+      : district.type === 'city'
+        ? 'regional_city'
+        : 'village';
+
+    onChange({
+      location_name: district.name,
+      location_level: 'district',
+      district_id: district.id,
+      district_name: district.name,
+      settlement_type: settlementType
+    });
+    setIsDistrictDropdownOpen(false);
+    setDistrictSearchTerm('');
   };
 
   return (
@@ -147,7 +199,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
               <span className={isLight ? 'text-rose-600' : 'text-[#FF3FD8]'}>*</span>
             </label>
             <span className={`text-xs font-mono font-semibold ${isLight ? 'text-sky-700' : 'text-[#00E5FF]'}`}>
-              {query.location_level === 'city' ? t.step2City : t.step2Region}
+              {selectedTerritory?.level === 'city' ? t.step2City : t.step2Region}
             </span>
           </div>
 
@@ -165,14 +217,14 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
               <div className="flex items-center gap-2 truncate min-w-0 pr-2">
                 <MapPin className={`w-4 h-4 absolute left-3 sm:left-3.5 shrink-0 ${isLight ? 'text-neutral-600' : 'text-[#00E5FF]'}`} />
                 <span className="font-semibold truncate text-xs sm:text-sm">
-                  {query.location_name || t.selectTerritory}
+                  {selectedTerritory?.name || query.region_name || (query.location_level !== 'district' ? query.location_name : '') || t.selectTerritory}
                 </span>
                 <span className={`text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded-md border shrink-0 ${
                   isLight 
                     ? 'bg-neutral-200 text-neutral-800 border-neutral-300' 
                     : 'bg-cyan-950/60 text-[#00E5FF] border-cyan-500/30'
                 }`}>
-                  {query.location_level === 'city' ? 'город' : 'область'}
+                  {selectedTerritory?.level === 'city' ? 'город' : 'область'}
                 </span>
                 {selectedTerritory && (
                   <span className={`text-xs hidden md:inline truncate ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
@@ -214,7 +266,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                 {/* Список территорий */}
                 <div className={`max-h-72 overflow-y-auto p-1.5 divide-y ${isLight ? 'divide-neutral-100' : 'divide-[#172036]'}`}>
                   {filteredTerritories.length > 0 ? (
-                    ['Города республиканского значения', 'Области Республики Казахстан', 'Крупные и областные города'].map((grp) => {
+                    ['Города республиканского значения', 'Области Республики Казахстан'].map((grp) => {
                       const groupItems = filteredTerritories.filter(item => item.group === grp);
                       if (groupItems.length === 0) return null;
 
@@ -227,7 +279,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                           </div>
                           <div className="space-y-0.5 pt-1">
                             {groupItems.map((territory) => {
-                              const isSelected = query.location_name.toLowerCase().trim() === territory.name.toLowerCase().trim() && query.location_level === territory.level;
+                              const isSelected = selectedTerritory?.id === territory.id;
                               return (
                                 <button
                                   key={`${territory.name}-${territory.level}`}
@@ -272,7 +324,124 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
           </div>
         </div>
 
-        {/* 3. ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ПРОЕКТА */}
+        {/* 3. Район / город внутри выбранной области */}
+        {selectedTerritory?.level === 'region' && (
+          <div className="space-y-2" ref={districtDropdownRef}>
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <label className={`text-xs font-bold tracking-tight flex items-center gap-2 ${
+                isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'
+              }`}>
+                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-xs font-mono font-bold border shrink-0 ${
+                  isLight
+                    ? 'bg-neutral-100 text-neutral-800 border-neutral-300'
+                    : 'bg-purple-950/60 text-[#8B5CFF] border-purple-500/40 shadow-[0_0_8px_rgba(139,92,255,0.4)]'
+                }`}>
+                  3
+                </span>
+                <span>{language === 'kk' ? 'Аудан / облыстық қала' : language === 'en' ? 'District / regional city' : language === 'zh' ? '区 / 州辖市' : 'Район / город области'}</span>
+                <span className={isLight ? 'text-rose-600' : 'text-[#FF3FD8]'}>*</span>
+              </label>
+              <span className={`text-xs font-mono ${
+                query.district_name
+                  ? (isLight ? 'text-emerald-700' : 'text-emerald-400')
+                  : (isLight ? 'text-amber-700' : 'text-amber-400')
+              }`}>
+                {query.district_name
+                  ? (language === 'kk' ? 'Таңдалды' : language === 'en' ? 'Selected' : language === 'zh' ? '已选择' : 'Выбрано')
+                  : (language === 'kk' ? 'МИО үшін қажет' : language === 'en' ? 'Required for MIO' : language === 'zh' ? 'MIO 必填' : 'Обязательно для точной проверки МИО')}
+              </span>
+            </div>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsDistrictDropdownOpen(!isDistrictDropdownOpen)}
+                className={`w-full border rounded-xl pl-10 pr-10 py-3 text-sm text-left flex items-center justify-between transition-all duration-200 cursor-pointer focus:outline-none ${
+                  isLight
+                    ? 'bg-neutral-50/80 border-neutral-300 hover:border-black text-neutral-900'
+                    : 'bg-[#02040A] border-[#172036] hover:border-[#8B5CFF] text-[#F4F7FF] focus:border-[#8B5CFF]'
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate min-w-0 pr-2">
+                  <Building2 className={`w-4 h-4 absolute left-3.5 shrink-0 ${isLight ? 'text-purple-600' : 'text-[#8B5CFF]'}`} />
+                  <span className="font-semibold truncate text-xs sm:text-sm">
+                    {selectedDistrict?.name || (language === 'kk' ? 'Аудан немесе қаланы таңдаңыз' : language === 'en' ? 'Select district or city' : language === 'zh' ? '选择区或城市' : 'Выберите район или город')}
+                  </span>
+                  {selectedDistrict && (
+                    <span className={`text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded-md border shrink-0 ${
+                      isLight ? 'bg-neutral-200 text-neutral-800 border-neutral-300' : 'bg-purple-950/60 text-purple-300 border-purple-500/30'
+                    }`}>
+                      {selectedDistrict.typeLabel}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDistrictDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDistrictDropdownOpen && (
+                <div className={`absolute z-50 left-0 right-0 mt-2 border rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl ${
+                  isLight ? 'bg-white border-neutral-300' : 'bg-[#030611] border-purple-500/40'
+                }`}>
+                  <div className={`p-3 border-b ${isLight ? 'bg-neutral-50 border-neutral-200' : 'bg-[#060814] border-[#172036]'}`}>
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={districtSearchTerm}
+                        onChange={(e) => setDistrictSearchTerm(e.target.value)}
+                        placeholder={language === 'kk' ? 'Аудан немесе қала бойынша іздеу' : language === 'en' ? 'Search district or city' : language === 'zh' ? '搜索区或城市' : 'Поиск района или города'}
+                        autoFocus
+                        className={`w-full border rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none ${
+                          isLight
+                            ? 'bg-white border-neutral-300 text-neutral-900'
+                            : 'bg-[#02040A] border-[#172036] text-[#F4F7FF] focus:border-[#8B5CFF]'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  <div className={`max-h-72 overflow-y-auto p-1.5 divide-y ${isLight ? 'divide-neutral-100' : 'divide-[#172036]'}`}>
+                    {filteredDistricts.length > 0 ? filteredDistricts.map((district) => {
+                      const isSelected = selectedDistrict?.id === district.id;
+                      return (
+                        <button
+                          key={district.id}
+                          type="button"
+                          onClick={() => handleSelectDistrict(district)}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 transition-colors ${
+                            isSelected
+                              ? (isLight ? 'bg-neutral-900 text-white' : 'bg-purple-500/20 text-purple-200 border border-purple-500/40')
+                              : (isLight ? 'hover:bg-neutral-100 text-neutral-800' : 'hover:bg-[#0d1224] text-slate-200')
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{district.name}</div>
+                            <div className={`text-[10px] truncate mt-0.5 ${isSelected ? 'opacity-80' : (isLight ? 'text-neutral-500' : 'text-slate-500')}`}>
+                              {district.typeLabel}
+                            </div>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        </button>
+                      );
+                    }) : (
+                      <div className={`p-4 text-center text-xs ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
+                        {language === 'kk' ? 'Ештеңе табылмады' : language === 'en' ? 'Nothing found' : language === 'zh' ? '未找到结果' : 'Ничего не найдено'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`text-[11px] leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-500'}`}>
+              {language === 'ru' && 'Список синхронизирован с картой и районной матрицей МИО. Выбор здесь автоматически используется в экспертном заключении.'}
+              {language === 'kk' && 'Тізім карта және МИО аудандық матрицасымен синхрондалған.'}
+              {language === 'en' && 'This list is synchronized with the map and MIO district matrix.'}
+              {language === 'zh' && '该列表与地图和 MIO 区域矩阵同步。'}
+            </div>
+          </div>
+        )}
+
+        {/* 4. ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ПРОЕКТА */}
         <div className={`pt-4 border-t ${isLight ? 'border-neutral-200' : 'border-[#172036]'}`}>
           <div className="flex flex-wrap items-center justify-between gap-1 pb-3">
             <button
