@@ -256,6 +256,16 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       } else {
         okedMatchLevel = 'compatible';
         matched_reasons.push('Гарантийный фонд 1 доступен широкому кругу отраслей при соблюдении исключений программы.');
+
+        if (!query.amount_kzt) {
+          missing_inputs.push('Сумма финансирования для проверки лимита Гарантийного фонда 1 (до 7 млрд тг)');
+          clarificationSet.add('amount');
+        }
+
+        if (!query.purpose) {
+          missing_inputs.push('Цель финансирования: инвестиции, оборотные средства или рефинансирование');
+          clarificationSet.add('purpose');
+        }
       }
     }
 
@@ -350,10 +360,13 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       if (prog.id.endsWith('.small_town')) {
         if (query.settlement_type === 'monotown' || query.settlement_type === 'village') {
           okedMatchLevel = 'compatible';
-          matched_reasons.push('Территория относится к моно-/малому городу или сельской местности по введённым параметрам.');
+          matched_reasons.push('Тип населённого пункта явно указан как моногород или сельская территория.');
+        } else if (query.settlement_type === 'regional_city' || query.settlement_type === 'republican_city') {
+          okedMatchLevel = 'excluded';
+          restrictions.push('Направление предназначено для моно-/малых городов и сельских населённых пунктов; выбранный тип территории этому не соответствует.');
         } else {
           okedMatchLevel = 'verification_needed';
-          missing_inputs.push('Подтверждение статуса территории как моно-/малого города или сельского населённого пункта');
+          missing_inputs.push('Указать тип населённого пункта: моногород, малый город или сельский населённый пункт');
           clarificationSet.add('location');
         }
       } else if (prog.id.endsWith('.stock_exchange')) {
@@ -470,6 +483,16 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     if (prog.id === 'damu.guarantee.guarantee_fund_2' && query.amount_kzt) {
       if (query.amount_kzt <= 7000000000) {
         restrictions.push(`Сумма финансирования до 7 млрд тенге относится к диапазону Гарантийного фонда 1; Гарантийный фонд 2 предназначен для финансирования свыше 7 млрд тенге.`);
+      }
+    }
+
+    // Дополнительная фиксация статуса ГФ1 после проверки общих параметров.
+    if (prog.id === 'damu.guarantee.guarantee_fund_1' && okedMatchLevel !== 'excluded') {
+      if (query.amount_kzt && query.amount_kzt <= 7000000000 && query.purpose && restrictions.length === 0) {
+        okedMatchLevel = 'exact';
+        matched_reasons.push('Сумма и цель финансирования соответствуют базовым параметрам Гарантийного фонда 1.');
+      } else if (!query.amount_kzt || !query.purpose) {
+        okedMatchLevel = 'compatible';
       }
     }
 
