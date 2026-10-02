@@ -239,6 +239,142 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     }
 
+    // Guarantee Fund 1: broad eligibility, but amount and known exclusions matter
+    else if (prog.id === 'damu.guarantee.guarantee_fund_1') {
+      const prohibitedExcise =
+        cleanCode.startsWith('12') ||
+        ['11.01', '11.02', '11.03', '11.04', '11.05'].some(ex => cleanCode.startsWith(ex));
+      const miningWithoutProcessing = ['05', '06', '07', '08', '09'].some(prefix => cleanCode.startsWith(prefix));
+
+      if (prohibitedExcise) {
+        okedMatchLevel = 'excluded';
+        restrictions.push(`ОКЭД ${cleanCode} относится к подакцизной деятельности, которая указана в исключениях Гарантийного фонда 1.`);
+      } else if (miningWithoutProcessing) {
+        okedMatchLevel = 'verification_needed';
+        matched_reasons.push('Для Гарантийного фонда 1 добывающие проекты требуют подтверждения наличия дальнейшей переработки.');
+        missing_inputs.push('Подтверждение переработки добываемого сырья');
+      } else {
+        okedMatchLevel = 'compatible';
+        matched_reasons.push('Гарантийный фонд 1 доступен широкому кругу отраслей при соблюдении исключений программы.');
+      }
+    }
+
+    // Guarantee Fund 2: крупные проекты свыше 7 млрд тг и ограниченный перечень секторов
+    else if (prog.id === 'damu.guarantee.guarantee_fund_2') {
+      const code2 = parseInt(cleanCode.slice(0, 2), 10);
+      const gf2Sector =
+        (!isNaN(code2) && code2 >= 10 && code2 <= 33) || // manufacturing
+        cleanCode.startsWith('01') || cleanCode.startsWith('02') || cleanCode.startsWith('03') || // APK
+        cleanCode.startsWith('35') || cleanCode.startsWith('36') || cleanCode.startsWith('37') || cleanCode.startsWith('38') || cleanCode.startsWith('39') || // energy/utilities
+        cleanCode.startsWith('49') || cleanCode.startsWith('50') || cleanCode.startsWith('51') || cleanCode.startsWith('52') || cleanCode.startsWith('53') || // transport/logistics
+        cleanCode.startsWith('55') || cleanCode.startsWith('56') || // tourism/hospitality
+        cleanCode.startsWith('61') || // communications
+        cleanCode.startsWith('85') || cleanCode.startsWith('86'); // education/health
+
+      if (!gf2Sector) {
+        okedMatchLevel = 'excluded';
+        restrictions.push(`ОКЭД ${cleanCode} не относится к секторам, указанным в текущей базе условий Гарантийного фонда 2.`);
+      } else if (!query.amount_kzt) {
+        okedMatchLevel = 'compatible';
+        missing_inputs.push('Сумма финансирования для проверки порога Гарантийного фонда 2 (> 7 млрд тг)');
+        clarificationSet.add('amount');
+      } else if (query.amount_kzt <= 7000000000) {
+        okedMatchLevel = 'excluded';
+        restrictions.push('Гарантийный фонд 2 предназначен для финансирования свыше 7 млрд тг; при меньшей сумме следует рассматривать Гарантийный фонд 1.');
+      } else {
+        okedMatchLevel = 'exact';
+        matched_reasons.push('Сумма финансирования превышает 7 млрд тг и отрасль входит в перечень секторов Гарантийного фонда 2.');
+        missing_inputs.push('Собственные средства не менее 20% стоимости проекта');
+      }
+    }
+
+    // APK investment guarantee
+    else if (prog.id === 'damu.guarantee.apk.investment') {
+      const isApk =
+        cleanCode.startsWith('01') ||
+        cleanCode.startsWith('03') ||
+        cleanCode.startsWith('10') ||
+        cleanCode.startsWith('11.06') ||
+        cleanCode.startsWith('11.07');
+
+      if (!isApk) {
+        okedMatchLevel = 'excluded';
+        restrictions.push(`ОКЭД ${cleanCode} не относится к АПК или пищевой переработке, заявленным для данной программы гарантирования.`);
+      } else {
+        okedMatchLevel = 'exact';
+        matched_reasons.push(`ОКЭД ${cleanCode} относится к АПК / переработке сельхозпродукции.`);
+      }
+    }
+
+    // APK spring / harvesting guarantee
+    else if (prog.id === 'damu.guarantee.apk.spring_harvesting') {
+      if (!cleanCode.startsWith('01')) {
+        okedMatchLevel = 'excluded';
+        restrictions.push(`ОКЭД ${cleanCode} не относится к растениеводству/сельскохозяйственной деятельности для весенне-полевых и уборочных работ.`);
+      } else {
+        okedMatchLevel = 'compatible';
+        matched_reasons.push(`ОКЭД ${cleanCode} относится к сельскому хозяйству; требуется подтверждение связи финансирования с весенне-полевыми или уборочными работами.`);
+        missing_inputs.push('Подтверждение, что цель финансирования — весенне-полевые и/или уборочные работы');
+      }
+    }
+
+    // Manufacturing SME tranches: Section C only, source quality requires verification
+    else if (prog.id === 'damu.loan.manufacturing_msb.tranche1') {
+      const code2 = parseInt(cleanCode.slice(0, 2), 10);
+      const isManufacturing = !isNaN(code2) && code2 >= 10 && code2 <= 33;
+      if (!isManufacturing) {
+        okedMatchLevel = 'excluded';
+        restrictions.push(`ОКЭД ${cleanCode} не относится к секции C «Обрабатывающая промышленность».`);
+      } else {
+        okedMatchLevel = 'verification_needed';
+        matched_reasons.push(`ОКЭД ${cleanCode} относится к секции C «Обрабатывающая промышленность».`);
+        missing_inputs.push('Актуальные условия транша требуют проверки: детальная страница программы в базе помечена как needs_verification');
+      }
+    }
+
+    // Damu Leasing: program details are incomplete in the source base, never present as a confident match
+    else if (prog.id === 'damu.leasing.damu_lizing') {
+      okedMatchLevel = 'verification_needed';
+      matched_reasons.push('Программа относится к лизингу техники/оборудования, но детальные условия в текущей базе не извлечены.');
+      missing_inputs.push('Актуальные условия «Даму-Лизинг» и соответствие конкретного предмета лизинга');
+      if (query.purpose && query.purpose !== 'Лизинг') {
+        restrictions.push(`Указанная цель «${query.purpose}» не соответствует назначению программы «Даму-Лизинг».`);
+      }
+    }
+
+    // EDP segment programs require business-size confirmation; do not show them as clean matches without it
+    else if (
+      prog.id.startsWith('damu.subsidy.enterprise_development.') ||
+      prog.id.startsWith('damu.guarantee.enterprise_development.')
+    ) {
+      if (prog.id.endsWith('.small_town')) {
+        if (query.settlement_type === 'monotown' || query.settlement_type === 'village') {
+          okedMatchLevel = 'compatible';
+          matched_reasons.push('Территория относится к моно-/малому городу или сельской местности по введённым параметрам.');
+        } else {
+          okedMatchLevel = 'verification_needed';
+          missing_inputs.push('Подтверждение статуса территории как моно-/малого города или сельского населённого пункта');
+          clarificationSet.add('location');
+        }
+      } else if (prog.id.endsWith('.stock_exchange')) {
+        okedMatchLevel = 'verification_needed';
+        missing_inputs.push('Подтверждение, что финансирование планируется через выпуск/размещение облигаций');
+      } else if (prog.id.endsWith('.social')) {
+        okedMatchLevel = 'social_only';
+        if (query.social_enterprise_registry === true) {
+          matched_reasons.push('Статус социального предпринимательства подтверждён.');
+        } else if (query.social_enterprise_registry === false) {
+          restrictions.push('Для данного направления требуется статус социального предпринимательства.');
+        } else {
+          missing_inputs.push('Наличие записи в реестре субъектов социального предпринимательства');
+          clarificationSet.add('social_enterprise_registry');
+        }
+      } else {
+        okedMatchLevel = 'compatible';
+        missing_inputs.push(`Подтверждение категории бизнеса для направления «${prog.target_segment}»`);
+      }
+    }
+
     // Social enterprise programs
     else if (prog.id.includes('.social')) {
       okedMatchLevel = 'social_only';
@@ -253,10 +389,16 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     }
 
-    // General Damu programs (Guarantee Fund 1, EKP Micro/SME/Large)
+    // Other programs: never overstate eligibility when the source base is incomplete
     else {
-      okedMatchLevel = 'compatible';
-      matched_reasons.push('Программа доступна для широкого круга субъектов частного предпринимательства.');
+      if (prog.data_quality === 'low' || prog.status === 'needs_verification') {
+        okedMatchLevel = 'verification_needed';
+        matched_reasons.push('В текущей базе недостаточно детальных условий для точного автоматического заключения.');
+        missing_inputs.push('Проверка актуального регламента программы');
+      } else {
+        okedMatchLevel = 'compatible';
+        matched_reasons.push('Программа не содержит подтверждённого отраслевого запрета в текущей базе; применимость зависит от остальных параметров проекта.');
+      }
     }
 
     // 4. Unified eligibility checks shared by ALL programs
@@ -326,8 +468,8 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     }
 
     if (prog.id === 'damu.guarantee.guarantee_fund_2' && query.amount_kzt) {
-      if (query.amount_kzt <= 1000000000) {
-        restrictions.push(`Сумма кредита до 1 млрд тенге обслуживается по базовой программе «Гарантийный фонд 1». Фонд 2 предназначен для крупных займов от 1 до 7 млрд тенге.`);
+      if (query.amount_kzt <= 7000000000) {
+        restrictions.push(`Сумма финансирования до 7 млрд тенге относится к диапазону Гарантийного фонда 1; Гарантийный фонд 2 предназначен для финансирования свыше 7 млрд тенге.`);
       }
     }
 
