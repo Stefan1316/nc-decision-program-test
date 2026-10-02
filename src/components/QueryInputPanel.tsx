@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserQuery } from '../types/damu';
 import { KAZAKHSTAN_TERRITORIES, TerritoryOption } from '../data/kazakhstanTerritories';
-import { getDistrictsByRegion, MioDistrictItem } from '../data/kazakhstanDistricts';
+import { ISKER_AYMAK_MATRIX } from '../data/iskerAymakMatrix';
 import { Search, MapPin, ChevronDown, Check, AlertTriangle, SlidersHorizontal, Building2, Coins, Briefcase } from 'lucide-react';
 import { ThemeMode, Language, translations } from '../i18n/translations';
 
@@ -67,16 +67,32 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
     item.name.toLowerCase().trim() === (query.region_name || (query.location_level !== 'district' ? query.location_name : '')).toLowerCase().trim()
   );
 
-  const districtOptions: MioDistrictItem[] = query.region_id && selectedTerritory?.level === 'region'
-    ? getDistrictsByRegion(query.region_id, query.region_name || selectedTerritory.name)
+  // Районы берём напрямую из той же официальной матрицы, которую использует карта.
+  // Это исключает расхождение между поиском и картой.
+  const effectiveRegionId = query.region_id || selectedTerritory?.id || '';
+  const matrixDistricts = selectedTerritory?.level === 'region' && effectiveRegionId
+    ? (ISKER_AYMAK_MATRIX[effectiveRegionId] || [])
     : [];
+
+  const districtOptions = matrixDistricts.map((record, index) => {
+    const lower = record.districtName.toLowerCase();
+    const isCity = lower.startsWith('г.') || lower.startsWith('город');
+    const isMonotown = ['рудный', 'лисаковск', 'сарань', 'балхаш', 'темиртау', 'сатпаев', 'жезказган', 'экибастуз', 'риддер', 'жанатас', 'степногорск']
+      .some(name => lower.includes(name));
+
+    return {
+      id: `${effectiveRegionId}-${index}`,
+      name: record.districtName,
+      type: isMonotown ? 'monotown' : isCity ? 'city' : 'district',
+      typeLabel: isMonotown ? 'Моногород / промышленный узел' : isCity ? 'Город области' : 'Район'
+    };
+  });
 
   const filteredDistricts = districtOptions.filter(item => {
     const q = districtSearchTerm.toLowerCase().trim();
     if (!q) return true;
     return item.name.toLowerCase().includes(q) ||
-      item.typeLabel.toLowerCase().includes(q) ||
-      item.center.toLowerCase().includes(q);
+      item.typeLabel.toLowerCase().includes(q);
   });
 
   const selectedDistrict = districtOptions.find(item =>
@@ -102,7 +118,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
     setDistrictSearchTerm('');
   };
 
-  const handleSelectDistrict = (district: MioDistrictItem) => {
+  const handleSelectDistrict = (district: typeof districtOptions[number]) => {
     const settlementType = district.type === 'monotown'
       ? 'monotown'
       : district.type === 'city'
