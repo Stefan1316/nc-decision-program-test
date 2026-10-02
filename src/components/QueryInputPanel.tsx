@@ -176,7 +176,14 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
             <input
               type="text"
               value={query.oked_code}
-              onChange={(e) => onChange({ oked_code: e.target.value })}
+              onChange={(e) => {
+                const normalized = e.target.value
+                  .replace(/,/g, '.')
+                  .replace(/\s+/g, '')
+                  .replace(/\.{2,}/g, '.')
+                  .replace(/[^0-9.]/g, '');
+                onChange({ oked_code: normalized });
+              }}
               placeholder={t.step1Placeholder}
               className={`w-full border rounded-xl pl-10 pr-3.5 py-3 text-sm font-mono tracking-wider focus:outline-none transition-all duration-200 ${
                 isLight 
