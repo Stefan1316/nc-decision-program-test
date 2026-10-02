@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EvaluationSummary, isRepublicanCity } from '../logic/decisionEngine';
 import { generateDocxReport, CoreProgramExport } from '../logic/docxExport';
 import { checkOrleuEligibility } from '../data/orleuPriorityOkeds';
+import { checkIskerDistrictEligibility } from '../logic/iskerEligibility';
 import { 
   X, Copy, Check, Download, FileText, 
   ExternalLink, Sparkles, CheckCircle2, AlertTriangle
@@ -55,16 +56,16 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
     okedName = language === 'kk' ? `${cleanCode} — Құрылыс металл конструкцияларын өндіру` : `${cleanCode} — Производство строительных металлоконструкций`;
   }
 
-  const oked2 = cleanCode.slice(0, 2);
-
   // 1. ПРОВЕРКА ПРОХОЖДЕНИЯ ПРОГРАММ ПО ПРЕДОСТАВЛЕННЫМ ДАННЫМ:
-  const isRepCity = isRepublicanCity(query.location_name, query.location_level);
+  const isRepCity = isRepublicanCity(query.region_name || query.location_name, query.location_level === 'district' ? 'region' : query.location_level);
 
   const isExcluded23 = cleanCode.startsWith('23.63');
   const isExcluded24 = ['24.10', '24.46', '24.51', '24.52'].some(ex => cleanCode.startsWith(ex));
-  const iskerPriorityList = ['10', '11.06', '11.07', '13', '14', '15', '16', '17', '20', '21', '22', '23', '24', '25', '26', '27', '31', '32'];
-  const isIskerPass = !isRepCity && !isExcluded23 && !isExcluded24 && (
-    iskerPriorityList.some(item => cleanCode.startsWith(item) || item === oked2)
+  const iskerCheck = query.region_id
+    ? checkIskerDistrictEligibility(query.region_id, query.district_name, cleanCode)
+    : null;
+  const isIskerPass = !isRepCity && !isExcluded23 && !isExcluded24 && Boolean(
+    iskerCheck?.matched && (!query.district_name || iskerCheck.districtFound)
   );
 
   const isTradeOked = cleanCode.startsWith('46') || cleanCode.startsWith('47') || cleanCode.startsWith('68.20');
@@ -103,7 +104,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
         ? (language === 'kk' 
             ? 'Шектеу: Республикалық маңызы бар қалалар (Астана, Алматы, Шымкент) «Іскер аймақ» бағдарламасына қатыспайды.'
             : 'Исключено регламентом Даму: программа «Іскер аймақ» действует исключительно в регионах, моногородах и малых городах (Астана, Алматы, Шымкент исключены).')
-        : (language === 'kk' ? 'ЭҚЖЖ бағдарламаның басым салалық тізіміне сәйкес келеді.' : 'ОКЭД соответствует приоритетному отраслевому списку программы.')
+        : (iskerCheck?.reason || (language === 'kk' ? 'МИО аудандық матрицасы бойынша тексеру қажет.' : 'Требуется проверка по районной матрице МИО.'))
     },
     {
       id: 'inner_trade',
@@ -190,7 +191,8 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
 
 ### ${t.paramsTitle}
 - **${t.okedLabel}** \`${query.oked_code}\` (${okedName})
-- **${t.territoryLabel}** ${query.location_name || (language === 'kk' ? 'Көрсетілмеген' : 'Не указана')} (${query.location_level === 'city' ? (language === 'kk' ? 'Қала' : 'Город') : (language === 'kk' ? 'Облыс' : 'Область')})
+- **${language === 'kk' ? 'Өңір:' : 'Регион:'}** ${query.region_name || query.location_name || (language === 'kk' ? 'Көрсетілмеген' : 'Не указан')}
+${query.district_name ? `- **${language === 'kk' ? 'Аудан / қала:' : 'Район / город:'}** ${query.district_name}` : ''}
 - **${t.financierLabel}** ${t.financierValue}
 
 ---
@@ -236,7 +238,7 @@ ${passedCorePrograms.map((p, i) => `
                 {t.title}
               </h2>
               <span className={`text-xs font-mono truncate block ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
-                OKED: {query.oked_code} · {query.location_name || (language === 'kk' ? 'Қазақстан' : language === 'en' ? 'Kazakhstan' : language === 'zh' ? '哈萨克斯坦' : 'Казахстан')}
+                OKED: {query.oked_code} · {query.region_name || query.location_name || (language === 'kk' ? 'Қазақстан' : language === 'en' ? 'Kazakhstan' : language === 'zh' ? '哈萨克斯坦' : 'Казахстан')}{query.district_name ? ` · ${query.district_name}` : ''}
               </span>
             </div>
           </div>
@@ -279,10 +281,14 @@ ${passedCorePrograms.map((p, i) => `
                 {t.territoryLabel}
               </span>
               <div className={`font-medium ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
-                {query.location_name || (language === 'kk' ? 'Көрсетілмеген' : language === 'en' ? 'Not specified' : language === 'zh' ? '未指定' : 'Не указана')}
+                {query.region_name || query.location_name || (language === 'kk' ? 'Көрсетілмеген' : language === 'en' ? 'Not specified' : language === 'zh' ? '未指定' : 'Не указан')}
               </div>
               <span className={`text-[11px] font-mono block ${isLight ? 'text-blue-600' : 'text-[#2F8BFF]'}`}>
-                {query.location_level === 'city' ? (language === 'kk' ? 'Қала (city)' : language === 'en' ? 'City' : language === 'zh' ? '城市' : 'Город (city)') : (language === 'kk' ? 'Облыс (region)' : language === 'en' ? 'Region' : language === 'zh' ? '州' : 'Область (region)')}
+                {query.district_name
+                  ? `${language === 'kk' ? 'Аудан/қала' : language === 'en' ? 'District/city' : language === 'zh' ? '区/城市' : 'Район/город'}: ${query.district_name}`
+                  : (query.location_level === 'city'
+                      ? (language === 'kk' ? 'Қала (city)' : language === 'en' ? 'City' : language === 'zh' ? '城市' : 'Город (city)')
+                      : (language === 'kk' ? 'Облыс (region)' : language === 'en' ? 'Region' : language === 'zh' ? '州' : 'Область (region)'))}
               </span>
             </div>
 
