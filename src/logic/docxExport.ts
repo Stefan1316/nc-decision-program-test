@@ -21,6 +21,11 @@ export async function generateDocxReport(
   okedName: string,
   corePrograms: CoreProgramExport[]
 ): Promise<Blob> {
+  const normalizedOked = (query.oked_code || '').trim().replace(/,/g, '.').replace(/\\s+/g, '');
+  const territoryText = query.district_name
+    ? `${query.region_name || query.location_name || 'Не указан регион'} → ${query.district_name}`
+    : (query.region_name || query.location_name || 'Не указана');
+
   const doc = new Document({
     sections: [
       {
@@ -66,13 +71,13 @@ export async function generateDocxReport(
           new Paragraph({
             children: [
               new TextRun({ text: '• Подтверждённый код ОКЭД: ', bold: true }),
-              new TextRun({ text: `${query.oked_code} (${okedName})` })
+              new TextRun({ text: `${normalizedOked} (${okedName})` })
             ]
           }),
           new Paragraph({
             children: [
               new TextRun({ text: '• Территория проекта: ', bold: true }),
-              new TextRun({ text: `${query.location_name || 'Не указана'} (${query.location_level === 'city' ? 'Город' : 'Область'})` })
+              new TextRun({ text: territoryText })
             ]
           }),
           new Paragraph({
