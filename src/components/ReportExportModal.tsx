@@ -78,7 +78,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const handleDownloadDocx = async () => {
     try {
       setIsExportingDocx(true);
-      const blob = await generateDocxReport(query, okedName, passedCorePrograms);
+      const blob = await generateDocxReport(query, okedName, passedCorePrograms, excludedProgramRows);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -105,7 +105,7 @@ ${query.district_name ? `- **${language === 'kk' ? 'Аудан / қала:' : '�
 ---
 
 ### ${t.programsTitle}
-${!isIskerPass && query.region_id ? `> **«Іскер аймақ»:** ${iskerNegativeReason}\n\n` : ''}${passedCorePrograms.map((p, i) => `
+${passedCorePrograms.map((p, i) => `
 #### ${i + 1}. ${p.title}
 - **${language === 'kk' ? 'Санаты:' : 'Категория:'}** ${p.category}
 - **${t.limitLabel}** ${p.limit}
@@ -114,6 +114,14 @@ ${!isIskerPass && query.region_id ? `> **«Іскер аймақ»:** ${iskerNeg
 - **${t.whoFinancesLabel}** ${p.financier}
 - **${t.justificationLabel}** ${p.note}
 - **${t.officialSource}** [${p.sourceId}](${p.url})
+`).join('\n')}
+
+
+### ${language === 'kk' ? 'Сәйкес келмейтін бағдарламалар' : 'Не подходят по текущим параметрам'}
+${excludedProgramRows.map((p, i) => `
+#### ${i + 1}. ${p.title}
+- **${language === 'kk' ? 'Себебі:' : 'Причина:'}** ${p.reasons.join('; ')}
+- **${t.officialSource}** ${p.sourceId}${p.url ? ` — ${p.url}` : ''}
 `).join('\n')}
 
 ---
@@ -212,55 +220,6 @@ ${!isIskerPass && query.region_id ? `> **«Іскер аймақ»:** ${iskerNeg
               </span>
             </div>
           </div>
-
-          {/* Предупреждение об исключении торговли в городах республиканского значения */}
-          {isRepCity && isTradeOked && (
-            <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-3 ${
-              isLight 
-                ? 'bg-amber-50 border-amber-300 text-amber-950 shadow-xs' 
-                : 'bg-amber-950/40 border-amber-500/50 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-            }`}>
-              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
-              <div className="space-y-1">
-                <strong className="block font-bold">
-                  {language === 'kk' 
-                    ? 'Аумақтық шектеу: Республикалық маңызы бар қала (Астана / Алматы / Шымкент)'
-                    : language === 'en'
-                      ? `Territorial restriction: City of republican significance (${query.location_name})`
-                      : language === 'zh'
-                        ? `区域政策限制：直辖市（${query.location_name}）`
-                        : `Ограничение локализации: Город республиканского значения (${query.location_name})`}
-                </strong>
-                <p className="text-[11px] leading-relaxed opacity-90">
-                  {language === 'kk'
-                    ? '«Даму» Қорының ресми ережесі бойынша ішкі сауда саласындағы (ЭҚЖЖ 46, 47, 68.20) несиелердің сыйақы мөлшерлемесін субсидиялау Астана, Алматы және Шымкент қалаларында ҚОЛДАНЫЛМАЙДЫ. Сауда бойынша жеңілдіктер тек облыстарда, моноқалаларда және ауылдық аумақтарда жұмыс істейді. Республикалық маңызы бар қалалардағы сауда субъектілері үшін 85%-ға дейінгі несие кепілдігі (1-ші Кепілдік қоры) қолжетімді, бірақ пайыздық мөлшерлемені субсидиялау берілмейді.'
-                    : language === 'en'
-                      ? 'According to official regulations of Damu Fund, interest rate subsidies for internal trade loans (OKED 46, 47, 68.20) ARE NOT PROVIDED in cities of republican significance (Astana, Almaty, Shymkent). Trade subsidy programs operate strictly in regional areas, monotowns, and rural areas. For trade enterprises in republican cities, loan guarantees are available (Damu Guarantee Fund 1 up to 85%), but interest rate subsidies are excluded.'
-                      : language === 'zh'
-                        ? '根据哈萨克斯坦“达姆”基金官方规程，针对国内商业贸易领域贷款（OKED代码 46, 47, 68.20）的利率贴息政策在直辖市（阿斯塔纳、阿拉木图、奇姆肯特）不予执行。贸易贴息政策仅在各州、单一产业城市及农村地区实施。直辖市内的商贸企业可申请达姆第一担保基金（最高85%的抵押贷款担保），但无法享受贷款利息贴息。'
-                        : `По официальному регламенту АО «ФРП «Даму» субсидирование процентной ставки по кредитам в сфере внутренней торговли (ОКЭД 46, 47, 68.20) в городах Астана, Алматы и Шымкент НЕ ПРЕДОСТАВЛЯЕТСЯ. Программа субсидирования торговли действует исключительно в областях, моногородах и сельских населенных пунктах. Для торговых предприятий в городах республиканского значения доступно гарантирование займов (Гарантийный фонд 1 Даму до 85%), но не субсидирование ставки.`}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!isIskerPass && query.region_id && (
-            <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-3 ${
-              isLight
-                ? 'bg-slate-50 border-slate-300 text-slate-800'
-                : 'bg-[#0B1020] border-[#334155] text-slate-300'
-            }`}>
-              <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${isLight ? 'text-slate-600' : 'text-amber-400'}`} />
-              <div className="space-y-1">
-                <strong className={`block font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
-                  {language === 'kk' ? '«Іскер аймақ» бойынша сәйкестік расталмады' : language === 'en' ? 'Isker Aymak eligibility not confirmed' : language === 'zh' ? '未确认符合“Іскер аймақ”条件' : '«Іскер аймақ»: не соответствует выбранным параметрам'}
-                </strong>
-                <p className="text-[11px] leading-relaxed">
-                  {iskerNegativeReason}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* ЦЕЛЕВЫЕ ПРОГРАММЫ ПО ПРЕДОСТАВЛЕННЫМ ДАННЫМ */}
           <div className="space-y-3">
