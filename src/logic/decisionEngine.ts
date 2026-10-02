@@ -19,7 +19,7 @@ export interface EvaluationSummary {
 export const REPUBLICAN_CITIES = ['алматы', 'астана', 'шымкент'];
 
 export function normalizeOked(code: string): { cleanCode: string; isBroad: boolean; warning?: string } {
-  const trimmed = code.trim();
+  const trimmed = code.trim().replace(/,/g, '.').replace(/\s+/g, '');
   if (!trimmed) {
     return { cleanCode: '', isBroad: true, warning: 'Код ОКЭД не указан' };
   }
@@ -73,7 +73,9 @@ export function isRepublicanCity(locationName: string, level?: string): boolean 
 
 export function evaluatePrograms(query: UserQuery): EvaluationSummary {
   const { cleanCode, isBroad, warning } = normalizeOked(query.oked_code);
-  const isRepCity = isRepublicanCity(query.location_name, query.location_level);
+  const geographyName = query.region_name || query.location_name;
+  const geographyLevel = query.location_level === 'district' ? 'region' : query.location_level;
+  const isRepCity = isRepublicanCity(geographyName, geographyLevel);
   
   const exact_matches: ProgramMatchResult[] = [];
   const possible_matches: ProgramMatchResult[] = [];
@@ -257,7 +259,48 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       matched_reasons.push('Программа доступна для широкого круга субъектов частного предпринимательства.');
     }
 
-    // 4. Clarification Evaluation (Step 2 checks if filled)
+    // 4. Unified eligibility checks shared by ALL programs
+    // Instrument preference
+    if (query.instrument_preference) {
+      const instrument = (prog.instrument_type || '').toLowerCase();
+      const requested = query.instrument_preference.toLowerCase();
+      const instrumentMatches =
+        (requested.includes('субсид') && instrument.includes('субсид')) ||
+        (requested.includes('гарант') && instrument.includes('гарант')) ||
+        (requested.includes('кредит') && (instrument.includes('кредит') || instrument.includes('займ'))) ||
+        (requested.includes('лизинг') && instrument.includes('лизинг'));
+
+      if (!instrumentMatches) {
+        restrictions.push(`Выбран предпочтительный инструмент «${query.instrument_preference}», а программа относится к инструменту «${prog.instrument_type}».`);
+      } else {
+        matched_reasons.push(`Инструмент программы соответствует предпочтению: ${query.instrument_preference}.`);
+      }
+    }
+
+    // Financing purpose
+    if (query.purpose) {
+      const purposeText = (prog.purpose_short || '').toLowerCase();
+      const requestedPurpose = query.purpose.toLowerCase();
+      const purposeMatches =
+        (requestedPurpose.includes('инвест') && purposeText.includes('инвест')) ||
+        (requestedPurpose.includes('оборот') && (purposeText.includes('оборот') || purposeText.includes('пополн'))) ||
+        (requestedPurpose.includes('рефин') && purposeText.includes('рефин')) ||
+        (requestedPurpose.includes('лизинг') && (purposeText.includes('лизинг') || (prog.instrument_type || '').toLowerCase().includes('лизинг')));
+
+      if (!purposeMatches && prog.purpose_short) {
+        restrictions.push(`Цель «${query.purpose}» не подтверждена условиями программы: ${prog.purpose_short}.`);
+      } else if (purposeMatches) {
+        matched_reasons.push(`Цель финансирования «${query.purpose}» соответствует назначению программы.`);
+      }
+    }
+
+    // Geography completeness: regional programs that depend on a district must have it selected.
+    if (prog.id === 'damu.subsidy.isker_aymak' && query.region_id && !query.district_name) {
+      missing_inputs.push('Конкретный район/город для точной территориальной проверки программы «Іскер аймақ»');
+      clarificationSet.add('location');
+    }
+
+    // 5. Clarification Evaluation (Step 2 checks if filled)
     if (query.tax_arrears === true) {
       if (prog.id === 'damu.loan.orleu' || prog.id === 'damu.leasing.orleu' || prog.id.includes('guarantee_fund')) {
         restrictions.push('Наличие непогашенной налоговой задолженности прямо запрещает участие в данной программе.');
@@ -292,7 +335,7 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     let status: ProgramStatus = 'possible_match';
     let status_label_ru = 'Возможное соответствие';
 
-    if (restrictions.length > 0 && restrictions.some(r => r.includes('исключен') || r.includes('запрещает') || r.includes('превышает') || r.includes('исключает'))) {
+    if (restrictions.length > 0 && restrictions.some(r => r.includes('исключен') || r.includes('запрещает') || r.includes('превышает') || r.includes('исключает') || r.includes('не подтверждена условиями программы') || r.includes('предпочтительный инструмент'))) {
       status = 'not_applicable';
       status_label_ru = 'Не применимо';
     } else if (okedMatchLevel === 'exact' && restrictions.length === 0) {
