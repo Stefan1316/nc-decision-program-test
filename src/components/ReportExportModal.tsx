@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { EvaluationSummary, isRepublicanCity } from '../logic/decisionEngine';
+import { EvaluationSummary } from '../logic/decisionEngine';
 import { generateDocxReport, CoreProgramExport } from '../logic/docxExport';
-import { checkOrleuEligibility } from '../data/orleuPriorityOkeds';
-import { checkIskerDistrictEligibility } from '../logic/iskerEligibility';
 import { 
   X, Copy, Check, Download, FileText, 
   ExternalLink, Sparkles, CheckCircle2, AlertTriangle
@@ -33,149 +31,50 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const isLight = theme === 'light';
   const { query } = summary;
 
-  // Определение расшифровки названия кода ОКЭД
-  const cleanCode = query.oked_code.trim().replace(/,/g, '.').replace(/\\s+/g, '');
-  const orleuCheck = checkOrleuEligibility(cleanCode);
+  // Единый отчёт по результатам decisionEngine для всех программ базы.
+  const cleanCode = query.oked_code.trim().replace(/,/g, '.').replace(/\s+/g, '');
+  const okedName = cleanCode;
 
-  let okedName = query.oked_code;
-  if (orleuCheck.matchedItem) {
-    okedName = `${cleanCode} — ${orleuCheck.matchedItem.name} (${orleuCheck.matchedItem.section})`;
-  } else if (cleanCode.startsWith('68.20.3')) {
-    okedName = language === 'kk' 
-      ? '68.20.3 — Өз немесе жалға алынған коммерциялық сауда жылжымайтын мүлікті жалға беру және қосалқы жалға беру' 
-      : '68.20.3 — Аренда и субаренда собственной или арендованной коммерческой торговой недвижимости';
-  } else if (cleanCode.startsWith('68.20')) {
-    okedName = language === 'kk' ? '68.20 — Жылжымайтын мүлікті жалға беру және басқару' : '68.20 — Аренда и управление недвижимостью';
-  } else if (cleanCode.startsWith('46')) {
-    okedName = language === 'kk' ? `${cleanCode} — Көтерме сауда` : `${cleanCode} — Оптовая торговля`;
-  } else if (cleanCode.startsWith('47')) {
-    okedName = language === 'kk' ? `${cleanCode} — Бөлшек сауда` : `${cleanCode} — Розничная торговля`;
-  } else if (cleanCode.startsWith('10')) {
-    okedName = language === 'kk' ? `${cleanCode} — Тамақ өнімдерін өндіру және қайта өңдеу / АӨК` : `${cleanCode} — Переработка и производство продуктов питания / АПК`;
-  } else if (cleanCode.startsWith('25')) {
-    okedName = language === 'kk' ? `${cleanCode} — Құрылыс металл конструкцияларын өндіру` : `${cleanCode} — Производство строительных металлоконструкций`;
-  }
-
-  // 1. ПРОВЕРКА ПРОХОЖДЕНИЯ ПРОГРАММ ПО ПРЕДОСТАВЛЕННЫМ ДАННЫМ:
-  const isRepCity = isRepublicanCity(query.region_name || query.location_name, query.location_level === 'district' ? 'region' : query.location_level);
-
-  const isExcluded23 = cleanCode.startsWith('23.63');
-  const isExcluded24 = ['24.10', '24.46', '24.51', '24.52'].some(ex => cleanCode.startsWith(ex));
-  const iskerCheck = query.region_id
-    ? checkIskerDistrictEligibility(query.region_id, query.district_name, cleanCode)
-    : null;
-  const isIskerPass = !isRepCity && !isExcluded23 && !isExcluded24 && Boolean(
-    iskerCheck?.matched && (!query.district_name || iskerCheck.districtFound)
-  );
-
-  const iskerNegativeReason = isRepCity
-    ? 'Программа «Іскер аймақ» не применяется к городам республиканского значения.'
-    : isExcluded23 || isExcluded24
-      ? `ОКЭД ${cleanCode} исключён из программы «Іскер аймақ» по действующим ограничениям.`
-      : (iskerCheck && !iskerCheck.matched
-          ? iskerCheck.reason
-          : 'Для подтверждения соответствия программе «Іскер аймақ» требуется выбрать конкретный регион и район/город.');
-
-  const isTradeOked = cleanCode.startsWith('46') || cleanCode.startsWith('47') || cleanCode.startsWith('68.20');
-  // В городах республиканского значения (Астана, Алматы, Шымкент) субсидирование торговли НЕ РАБОТАЕТ!
-  const isTradePass = isTradeOked && !isRepCity;
-
-  const isGf1Pass = !cleanCode.startsWith('25.4') && !cleanCode.startsWith('12') && !['11.01', '11.02', '11.03', '11.04', '11.05'].some(ex => cleanCode.startsWith(ex));
-
-  // Проверка «Өрлеу» по официальному Перечню приоритетных видов экономической деятельности Damu
-  const isOrleuPass = orleuCheck.matched && !orleuCheck.isExcluded;
-  const orleuJustification = orleuCheck.matchedItem
-    ? `${orleuCheck.matchedItem.section}: ОКЭД ${cleanCode} входит в перечень «${orleuCheck.matchedItem.name}».`
-    : (language === 'kk' ? 'Өңдеу өнеркәсібі немесе көлік инфрақұрылымы бойынша сәйкестік расталды.' : 'Подтверждено соответствие перечню обрабатывающей промышленности или транспорта.');
-
-  // Кандидаты программ
-  const candidateCorePrograms: CoreProgramExport[] = [
-    {
-      id: 'isker_aymak',
-      title: language === 'kk' 
-        ? '«Іскер аймақ» бағдарламасы (Шағын бизнесті қолдаудың бірыңғай бағдарламасы)' 
-        : 'Программа «Іскер аймақ» (Единая программа поддержки малого бизнеса)',
-      category: language === 'kk' ? 'Сыйақы мөлшерлемесін субсидиялау' : 'Субсидирование ставки вознаграждения',
-      applicable: isIskerPass,
-      limit: language === 'kk' ? '200 млн теңгеге дейін' : 'до 200 млн тенге',
-      rate: language === 'kk' 
-        ? 'Номиналды мөлшерлеменің 40%-ы субсидияланады (әлеуметтік бизнес үшін 50%). Қарыз алушы үшін 12,6%-дан кем емес'
-        : 'Субсидируется 40% от номинальной ставки (50% для соц. бизнеса). Конечная ставка заёмщика не менее 12,6%',
-      term: language === 'kk' ? '3 жылға дейін' : 'до 3 лет',
-      purposes: language === 'kk' ? 'Инвестициялар; айналым қаражатын толықтыру' : 'Инвестиции; пополнение оборотных средств',
-      financier: language === 'kk' 
-        ? 'ҚР екінші деңгейдегі банктері (Halyk, Forte, ЦентрКредит, Bereke, Jusan ж.б.) «ДАМУ» КДҚ» АҚ-мен серіктестікте'
-        : 'Банки второго уровня РК (Halyk, Forte, ЦентрКредит, Bereke, Jusan и др.) в партнёрстве с АО «ФРП «ДАМУ»',
-      sourceId: 'SRC-ISKER',
-      url: 'https://damu.kz/ru/programmi/subsidy/isker_aymak',
-      note: isRepCity
-        ? (language === 'kk' 
-            ? 'Шектеу: Республикалық маңызы бар қалалар (Астана, Алматы, Шымкент) «Іскер аймақ» бағдарламасына қатыспайды.'
-            : 'Исключено регламентом Даму: программа «Іскер аймақ» действует исключительно в регионах, моногородах и малых городах (Астана, Алматы, Шымкент исключены).')
-        : (iskerCheck?.reason || (language === 'kk' ? 'МИО аудандық матрицасы бойынша тексеру қажет.' : 'Требуется проверка по районной матрице МИО.'))
-    },
-    {
-      id: 'inner_trade',
-      title: language === 'kk' 
-        ? 'Субсидияланатын сауда саласы (Ішкі сауда субъектілерін қолдау)' 
-        : 'Субсидируемая сфера торговли (Поддержка субъектов внутренней торговли)',
-      category: language === 'kk' ? 'Пайыздық мөлшерлемені субсидиялау' : 'Субсидирование процентной ставки',
-      applicable: isTradePass,
-      limit: language === 'kk' ? '3 млрд теңгеге дейін' : 'до 3 млрд тенге',
-      rate: language === 'kk'
-        ? 'Номиналды мөлшерлеменің 40%-ы субсидияланады; субъект үшін 12,6%-дан кем емес'
-        : 'Субсидируется 40% от номинальной ставки; ставка субъекта не менее 12,6%',
-      term: language === 'kk' ? 'Инвестициялар — 5 жылға дейін; айналым қаражаты — 3 жылға дейін' : 'Инвестиции — до 5 лет; оборотные средства — до 3 лет',
-      purposes: language === 'kk'
-        ? 'Инвестициялар; қазақстандық тауар өндірушілерден тауарлар, шикізат пен материалдар сатып алуға АҚТ'
-        : 'Инвестиции; ПОС товаров, сырья и материалов у казахстанских товаропроизводителей из Реестра',
-      financier: language === 'kk' ? 'ҚР ЕДБ + «Даму» Қоры' : 'Банки второго уровня РК + Фонд «Даму»',
-      sourceId: 'SRC-INNER-TRADE',
-      url: 'https://damu.kz/ru/programmi/subsidy/inner_support',
-      note: isRepCity
-        ? (language === 'kk' 
-            ? 'Шектеу: Республикалық маңызы бар қалаларда (Астана, Алматы, Шымкент) ішкі сауданы субсидиялау Даму регламенті бойынша қолданылмайды.'
-            : 'Исключено регламентом Даму: в городах республиканского значения (Астана, Алматы, Шымкент) субсидирование процентной ставки в сфере внутренней торговли не предоставляется.')
-        : (language === 'kk' 
-            ? 'ЭҚЖЖ расталды: көтерме / бөлшек сауда және сауда коммерциялық жылжымайтын мүлікті субарендалау.' 
-            : 'ОКЭД подтверждён: оптовая / розничная торговля и субаренда коммерческой торговой недвижимости.')
-    },
-    {
-      id: 'guarantee_fund_1',
-      title: language === 'kk' 
-        ? '7 млрд теңгеге дейінгі кепілдік қамтамасыз ету (1-ші Кепілдік қоры)' 
-        : 'Гарантия залога до 7 млрд тенге (Гарантийный фонд 1)',
-      category: language === 'kk' ? 'Несиелерге мемлекеттік кепілдік беру' : 'Государственное гарантирование кредитов',
-      applicable: isGf1Pass,
-      limit: language === 'kk' ? 'Несие 7 млрд теңгеге дейін; Damu кепілдік мөлшері 85%-ға дейін (3,5 млрд теңгеге дейін)' : 'Кредит до 7 млрд тенге; размер гарантии Damu до 85% (до 3,5 млрд тенге)',
-      rate: language === 'kk' ? 'Кепілдік сомасынан 1,5% комиссия (біржолғы және қалдықтан жыл сайын)' : 'Комиссия 1,5% от суммы гарантии (единовременно и ежегодно от остатка)',
-      term: language === 'kk' ? 'Кепілдік мерзімі — несие мерзімі + 5 ай' : 'Срок гарантии — срок кредита + 5 месяцев',
-      purposes: language === 'kk' ? 'Инвестициялар; айналым қаражаты; қайта қаржыландыру' : 'Инвестиции; пополнение оборотных средств; рефинансирование',
-      financier: language === 'kk' ? 'Екінші деңгейдегі банктер («Даму» Қорының жедел мақұлдауымен)' : 'Банки второго уровня (быстрое одобрение Фонда «Даму»)',
-      sourceId: 'SRC-GF1',
-      url: 'https://damu.kz/ru/programmi/guarantee/guarantee_funds_support/guarantee_fund',
-      note: language === 'kk' ? 'Банк алдындағы бизнестің кепілдік қамтамасыз ету тапшылығының 85%-на дейін жабады.' : 'Покрывает до 85% дефицита залогового обеспечения бизнеса перед банком.'
-    },
-    {
-      id: 'orleu_and_leasing',
-      title: language === 'kk' 
-        ? '«Өрлеу» және қаржылық лизинг (Жеңілдікті несиелеу және лизингтік мәмілелер)' 
-        : '«Өрлеу» и финансовый лизинг (Льготное кредитование и лизинговые сделки)',
-      category: language === 'kk' ? 'Жеңілдікті тікелей қорландыру / Жабдық лизингі' : 'Льготное прямое фондирование / Лизинг оборудования',
-      applicable: isOrleuPass,
-      limit: language === 'kk' ? '«Өрлеу» несиелеуі: 7 млрд теңгеге дейін; «Өрлеу» лизингі: ШОҚ үшін 1 млн-нан 500 млн теңгеге дейін' : 'Кредитование «Өрлеу»: до 7 млрд тенге; Лизинг «Өрлеу»: от 1 млн до 500 млн тенге на СМСП',
-      rate: language === 'kk' ? 'Бекітілген жеңілдікті мөлшерлеме: жылдық 12,6%' : 'Фиксированная льготная ставка: 12,6% годовых',
-      term: language === 'kk' ? 'Инвестициялық несиелер: 120 айға дейін; Лизинг: 36–60 ай' : 'Кредиты на инвестиции: до 120 месяцев; Лизинг: 36–60 месяцев',
-      purposes: language === 'kk' ? 'Отандық немесе шетелдік жабдықтарды, арнайы техниканы сатып алу және қуаттарды жаңғырту' : 'Приобретение отечественного или импортного оборудования, спецтехники и модернизация мощностей',
-      financier: language === 'kk' ? 'Лизингтік компаниялар, МҚҰ және Damu Қорының серіктес ЕДБ' : 'Лизинговые компании, МФО с лизинговой лицензией и БВУ-партнёры Фонда Damu',
-      sourceId: 'SRC-ORLEU',
-      url: 'https://damu.kz/ru/programmi/loans/orleu',
-      note: orleuJustification
-    }
+  const eligibleResults = [
+    ...summary.exact_matches,
+    ...summary.possible_matches,
+    ...summary.needs_clarification,
+    ...summary.needs_verification
   ];
+  const excludedResults = summary.not_applicable;
 
-  const passedCorePrograms = candidateCorePrograms.filter(p => p.applicable);
+  const passedCorePrograms: CoreProgramExport[] = eligibleResults.map((result) => {
+    const p = result.program;
+    const primarySource = result.sources?.[0];
+    const reasonParts = [
+      ...result.matched_reasons,
+      ...(result.missing_inputs.length > 0 ? ['Требуется уточнить: ' + result.missing_inputs.join('; ')] : [])
+    ];
 
+    return {
+      id: p.id,
+      title: p.name_ru,
+      category: p.instrument_type + ' · ' + result.status_label_ru,
+      applicable: result.status !== 'not_applicable',
+      limit: p.amount_max_text || 'По условиям программы',
+      rate: p.borrower_rate_text || p.subsidy_text || 'По условиям программы',
+      term: p.term_text || 'Не указано',
+      purposes: p.purpose_short || 'Уточняется по регламенту',
+      financier: p.institution_id === 'damu' ? 'АО «ФРП «Даму» / партнёрские финансовые организации' : p.institution_id,
+      sourceId: primarySource?.source_id || p.source_ids?.[0] || 'SOURCE',
+      url: primarySource?.url || '',
+      note: reasonParts.join(' ') || 'Программа требует дополнительной проверки условий.'
+    };
+  });
+
+  const excludedProgramRows = excludedResults.map((result) => ({
+    id: result.program.id,
+    title: result.program.name_ru,
+    instrument: result.program.instrument_type,
+    reasons: result.restrictions.length > 0 ? result.restrictions : ['Не соответствует текущим параметрам запроса.'],
+    sourceId: result.sources?.[0]?.source_id || result.program.source_ids?.[0] || 'SOURCE',
+    url: result.sources?.[0]?.url || ''
+  }));
   const handleDownloadDocx = async () => {
     try {
       setIsExportingDocx(true);
