@@ -19,7 +19,8 @@ export interface CoreProgramExport {
 export async function generateDocxReport(
   query: UserQuery,
   okedName: string,
-  corePrograms: CoreProgramExport[]
+  corePrograms: CoreProgramExport[],
+  excludedPrograms: Array<{ id: string; title: string; instrument: string; reasons: string[]; sourceId: string; url: string }> = []
 ): Promise<Blob> {
   const normalizedOked = (query.oked_code || '').trim().replace(/,/g, '.').replace(/\\s+/g, '');
   const territoryText = query.district_name
@@ -152,9 +153,49 @@ export async function generateDocxReport(
             })
           ]),
 
+          ...(excludedPrograms.length > 0 ? [
+            new Paragraph({
+              text: '3. НЕ ПОДХОДЯТ ПО ТЕКУЩИМ ПАРАМЕТРАМ',
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 220, after: 120 }
+            }),
+            ...excludedPrograms.flatMap((prog, idx) => [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `${idx + 1}. ${prog.title}`,
+                    bold: true,
+                    size: 21,
+                    color: 'A61B1B'
+                  })
+                ],
+                spacing: { before: 100, after: 50 }
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Инструмент: ', bold: true }),
+                  new TextRun({ text: prog.instrument })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Причина несоответствия: ', bold: true }),
+                  new TextRun({ text: prog.reasons.join('; ') })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Источник: ', bold: true }),
+                  new TextRun({ text: `${prog.sourceId}${prog.url ? ` (${prog.url})` : ''}` })
+                ],
+                spacing: { after: 120 }
+              })
+            ])
+          ] : []),
+
           // Заключительная правовая часть
           new Paragraph({
-            text: '3. РЕГЛАМЕНТ ПРИНЯТИЯ РЕШЕНИЯ',
+            text: '4. РЕГЛАМЕНТ ПРИНЯТИЯ РЕШЕНИЯ',
             heading: HeadingLevel.HEADING_1,
             spacing: { before: 200, after: 100 }
           }),
