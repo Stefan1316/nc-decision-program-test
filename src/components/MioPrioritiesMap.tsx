@@ -34,6 +34,7 @@ interface MioPrioritiesMapProps {
   language: Language;
   onClose?: () => void;
   onOpenReport?: () => void;
+  compactMode?: boolean;
 }
 
 type MacroZone = 'all' | 'west' | 'north' | 'center' | 'east' | 'south' | 'cities';
@@ -48,7 +49,8 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
   theme,
   language,
   onClose,
-  onOpenReport
+  onOpenReport,
+  compactMode = false
 }) => {
   const isLight = theme === 'light';
   const isKk = language === 'kk';
@@ -363,10 +365,10 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
       </div>
 
       {/* Основная сетка: Точная векторная карта слева + Детализация районов и ОКЭД справа */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-neutral-200 dark:divide-[#172036]">
+      <div className={compactMode ? "grid grid-cols-1 gap-0 divide-y divide-neutral-200 dark:divide-[#172036]" : "grid grid-cols-1 lg:grid-cols-12 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-neutral-200 dark:divide-[#172036]"}>
         
         {/* Левая колонка: Высокоточная векторная карта Казахстана */}
-        <div className="lg:col-span-7 p-3 sm:p-5 flex flex-col justify-between relative">
+        <div className={compactMode ? "p-3 sm:p-5 flex flex-col justify-between relative" : "lg:col-span-7 p-3 sm:p-5 flex flex-col justify-between relative"}>
           
           {/* Индикатор соответствия по ОКЭД */}
           {okedFilter.trim() && (
@@ -666,7 +668,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
         </div>
 
         {/* Правая колонка: Детализация выбранного региона, список районов и поддерживаемых ОКЭД */}
-        <div className={`lg:col-span-5 p-4 sm:p-5 flex flex-col justify-between space-y-4 ${
+        <div className={`${compactMode ? "" : "lg:col-span-5 "}p-4 sm:p-5 flex flex-col justify-between space-y-4 ${
           isLight ? 'bg-neutral-50/50' : 'bg-[#02040A]'
         }`}>
           {selectedProfile && selectedRegionDef ? (
