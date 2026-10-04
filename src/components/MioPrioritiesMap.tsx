@@ -88,6 +88,25 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
     return found ? found.id : 'aktobe-region'; // По умолчанию Актюбинская область или выбранная
   });
 
+  // Синхронизация выбора из формы с картой.
+  React.useEffect(() => {
+    const lower = (currentLocationName || '').toLowerCase().trim();
+    if (!lower) return;
+    const found = KAZAKHSTAN_MAP_REGIONS.find(r =>
+      lower.includes(r.name.toLowerCase()) ||
+      r.name.toLowerCase().includes(lower) ||
+      lower.includes(r.center.toLowerCase())
+    );
+    if (found && found.id !== selectedRegionId) {
+      setSelectedRegionId(found.id);
+    }
+  }, [currentLocationName]);
+
+  // Синхронизация ОКЭД из формы с фильтром карты.
+  React.useEffect(() => {
+    setOkedFilter(currentOkedCode || '');
+  }, [currentOkedCode]);
+
   // Раскрытый район в аккордеоне (по умолчанию первый район)
   const [expandedDistrictId, setExpandedDistrictId] = useState<string | null>(null);
 
@@ -391,6 +410,34 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
               <span className="text-[11px] font-mono opacity-80">
                 {priorityRegionIds.length > 0 ? 'Подсвечены неоном на карте' : 'Нет прямых региональных льгот'}
               </span>
+            </div>
+          )}
+
+          {compactMode && selectedProfile && (
+            <div className={`mb-3 p-3 rounded-xl border ${
+              isLight ? 'bg-neutral-50 border-neutral-200' : 'bg-[#02040A] border-[#172036]'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className={`text-xs font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
+                    {selectedProfile.regionName}
+                  </div>
+                  <div className={`text-[11px] mt-1 leading-relaxed ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
+                    {selectedProfile.description}
+                  </div>
+                </div>
+                <span className={`shrink-0 px-2 py-1 rounded-md border text-[10px] font-mono ${
+                  isLight ? 'bg-white border-neutral-200 text-neutral-600' : 'bg-[#060814] border-[#172036] text-cyan-300'
+                }`}>
+                  {selectedProfile.center}
+                </span>
+              </div>
+              <div className={`mt-2 pt-2 border-t text-[11px] leading-relaxed ${
+                isLight ? 'border-neutral-200 text-neutral-700' : 'border-[#172036] text-slate-300'
+              }`}>
+                <strong className={isLight ? 'text-neutral-900' : 'text-amber-300'}>Приоритеты региона: </strong>
+                {selectedProfile.specialization}
+              </div>
             </div>
           )}
 
