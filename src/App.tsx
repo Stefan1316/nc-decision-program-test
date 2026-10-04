@@ -93,7 +93,10 @@ export default function App() {
       region_id: regionId || prev.region_id,
       region_name: regionName,
       district_id: '',
-      district_name: ''
+      district_name: '',
+      settlement_type: ['almaty-city', 'astana-city', 'shymkent-city'].includes(regionId || '')
+        ? 'republican_city'
+        : 'any'
     }));
   };
 
@@ -318,7 +321,7 @@ export default function App() {
                 region_name: regionName || query.region_name,
                 district_id: districtId || '',
                 district_name: districtName,
-                settlement_type: settlementType || query.settlement_type
+                settlement_type: settlementType || 'any'
               })}
               theme={theme}
               language={language}
