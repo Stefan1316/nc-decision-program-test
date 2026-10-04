@@ -170,6 +170,27 @@ export default function App() {
     return calculateReadiness(query, liveSummary);
   }, [query, liveSummary]);
 
+  const clarificationCount = useMemo(() => {
+    const buckets = new Set<string>();
+    const rows = [...liveSummary.needs_clarification, ...liveSummary.needs_verification];
+    for (const row of rows) {
+      for (const item of row.missing_inputs || []) {
+        const s = item.toLowerCase();
+        if (s.includes('сумм')) buckets.add('amount');
+        else if (s.includes('цел') || s.includes('назначен')) buckets.add('purpose');
+        else if (s.includes('насел') || s.includes('район') || s.includes('город') || s.includes('территор')) buckets.add('location');
+        else if (s.includes('категор') || s.includes('форм') || s.includes('субъект')) buckets.add('entity');
+        else if (s.includes('реестр') || s.includes('социаль')) buckets.add('social');
+        else if (s.includes('собствен')) buckets.add('own_funds');
+        else if (s.includes('задолж') || s.includes('просроч')) buckets.add('debt');
+        else if (s.includes('лизинг') || s.includes('инструмент')) buckets.add('instrument');
+        else if (s.includes('регламент') || s.includes('провер')) buckets.add('verification');
+        else buckets.add(item.trim());
+      }
+    }
+    return buckets.size;
+  }, [liveSummary]);
+
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
       isLight 
@@ -239,103 +260,11 @@ export default function App() {
           </p>
         </div>
 
-        {/* Выбор способа работы: Интерактивная карта Даму vs Быстрый поиск по ОКЭД и городу */}
-        <div className={`p-1.5 rounded-2xl border transition-all ${
-          isLight ? 'bg-neutral-100/90 border-neutral-200' : 'bg-[#060814] border-[#172036]'
-        }`}>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setActiveView('map')}
-                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeView === 'map'
-                    ? isLight
-                      ? 'bg-white text-neutral-950 shadow-sm border border-neutral-300'
-                      : 'bg-[#00E5FF] text-slate-950 shadow-[0_0_15px_rgba(0,229,255,0.4)]'
-                    : isLight
-                      ? 'text-neutral-600 hover:text-black'
-                      : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Map className="w-4 h-4 shrink-0" />
-                <span>
-                  {language === 'kk' ? '🗺️ Интерактивті карта' : language === 'en' ? '🗺️ Interactive Map' : language === 'zh' ? '🗺️ 交互式地图' : '🗺️ Интерактивная карта Даму'}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView('search')}
-                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeView === 'search'
-                    ? isLight
-                      ? 'bg-white text-neutral-950 shadow-sm border border-neutral-300'
-                      : 'bg-[#00E5FF] text-slate-950 shadow-[0_0_15px_rgba(0,229,255,0.4)]'
-                    : isLight
-                      ? 'text-neutral-600 hover:text-black'
-                      : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Search className="w-4 h-4 shrink-0" />
-                <span>
-                  {language === 'kk' ? '🔍 Іздеу жүйесі' : language === 'en' ? '🔍 Search (OKED + City)' : language === 'zh' ? '🔍 智能检索' : '🔍 Поисковик (ОКЭД + Город)'}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView('split')}
-                className={`hidden md:flex px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition-all items-center justify-center gap-2 cursor-pointer ${
-                  activeView === 'split'
-                    ? isLight
-                      ? 'bg-white text-neutral-950 shadow-sm border border-neutral-300'
-                      : 'bg-[#00E5FF] text-slate-950 shadow-[0_0_15px_rgba(0,229,255,0.4)]'
-                    : isLight
-                      ? 'text-neutral-600 hover:text-black'
-                      : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Layers className="w-4 h-4 shrink-0" />
-                <span>
-                  {language === 'kk' ? '⚡ Карта + Іздеу бірге' : language === 'en' ? '⚡ Map + Search' : language === 'zh' ? '⚡ 地图与检索并列' : '⚡ Карта + Поиск вместе'}
-                </span>
-              </button>
-            </div>
-
-            <div className={`px-3 py-1.5 text-[11px] font-mono rounded-xl border hidden sm:flex items-center gap-2 ${
-              isLight ? 'bg-white text-neutral-600 border-neutral-200' : 'bg-[#02040A] text-slate-400 border-[#172036]'
-            }`}>
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span>
-                {activeView === 'map' 
-                  ? (language === 'kk' ? '«Даму» бағдарламаларына қол жеткізу үшін картадан өңірді таңдаңыз' : language === 'en' ? 'Select a region on the map for all Damu programs' : language === 'zh' ? '在地图上选择地区即可查看全部达姆扶持政策' : 'Выбирайте регион на карте для доступа ко всем программам Даму')
-                  : activeView === 'search'
-                    ? (language === 'kk' ? 'Жоғарыдағы іздеуге ЭҚЖЖ мен қаланы енгізіңіз' : language === 'en' ? 'Enter OKED and city in the search inputs above' : language === 'zh' ? '请在上方检索框中输入 OKED 代码和城市' : 'Введите ОКЭД и город в поисковик сверху')
-                    : (language === 'kk' ? 'Карта мен іздеу параметрлерін синхрондау' : language === 'en' ? 'Map and search parameters synchronized' : language === 'zh' ? '地图与检索参数智能联动' : 'Синхронизация карты и параметров поиска')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 1. Поисковик параметров проекта (ОКЭД, Территория, Сумма, Цель, Инструмент) */}
-        {(activeView === 'search' || activeView === 'split') && (
-          <QueryInputPanel
-            query={query}
-            onChange={handleQueryChange}
-            isBroadOked={liveSummary.is_broad_oked}
-            broadWarning={liveSummary.broad_oked_warning}
-            theme={theme}
-            language={language}
-            clarificationCount={liveSummary.needs_clarification.length + liveSummary.needs_verification.length}
-            onAnalyze={handleAnalyze}
-          />
-        )}
-
-        {/* 2. Интерактивная карта регионов и программ Фонда «Даму» */}
-        {(activeView === 'map' || activeView === 'split') && (
-          <div className="space-y-4 animate-in fade-in duration-300">
+        {/* Единый рабочий стол: карта + параметры + readiness */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+          <div className="xl:col-span-7 min-w-0">
             <MioPrioritiesMap
+              compactMode
               currentLocationName={query.location_name}
               currentOkedCode={query.oked_code}
               onSelectRegion={handleSelectRegionFromMap}
@@ -353,103 +282,113 @@ export default function App() {
               theme={theme}
               language={language}
               onOpenReport={handleOpenReport}
-              onClose={() => setActiveView('search')}
             />
           </div>
-        )}
 
-        {/* Готовность анализа и досье */}
-        <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
-          isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/90 border-[#172036] shadow-lg'
-        }`}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className={`text-xs font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Готовность анализа</div>
-                <div className={`text-xs font-mono font-bold ${readiness.analysis_percent >= 80 ? 'text-emerald-400' : readiness.analysis_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
-                  {readiness.analysis_percent}%
+          <div className="xl:col-span-5 min-w-0 xl:sticky xl:top-4 space-y-4">
+            <QueryInputPanel
+              query={query}
+              onChange={handleQueryChange}
+              isBroadOked={liveSummary.is_broad_oked}
+              broadWarning={liveSummary.broad_oked_warning}
+              theme={theme}
+              language={language}
+              clarificationCount={clarificationCount}
+              onAnalyze={handleAnalyze}
+            />
+
+            <div className={`p-4 rounded-2xl border transition-all ${
+              isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/95 border-[#172036] shadow-lg'
+            }`}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className={`text-[11px] font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Анализ</span>
+                    <span className={`text-xs font-mono font-bold ${readiness.analysis_percent >= 80 ? 'text-emerald-400' : readiness.analysis_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {readiness.analysis_percent}%
+                    </span>
+                  </div>
+                  <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
+                    <div className="h-full bg-cyan-400 transition-all" style={{ width: `${readiness.analysis_percent}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className={`text-[11px] font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Досье</span>
+                    <span className={`text-xs font-mono font-bold ${readiness.dossier_percent >= 90 ? 'text-emerald-400' : readiness.dossier_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {readiness.dossier_percent}%
+                    </span>
+                  </div>
+                  <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
+                    <div className="h-full bg-purple-400 transition-all" style={{ width: `${readiness.dossier_percent}%` }} />
+                  </div>
                 </div>
               </div>
-              <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
-                <div className="h-full bg-cyan-400 transition-all" style={{ width: `${readiness.analysis_percent}%` }} />
-              </div>
-              <div className={`text-[11px] mt-2 leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
+
+              <div className={`mt-3 text-[11px] leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
                 {readiness.can_run_preliminary
-                  ? 'Предварительный подбор уже доступен. Недостающие данные снижают точность, но не блокируют результат.'
-                  : 'Для предварительного подбора достаточно указать ОКЭД и территорию проекта.'}
+                  ? 'Предварительный подбор уже доступен. Неполные данные не блокируют результат.'
+                  : 'Укажите ОКЭД и территорию, чтобы запустить предварительный подбор.'}
               </div>
-              {readiness.analysis_missing.length > 0 && (
-                <div className={`text-[11px] mt-2 ${isLight ? 'text-amber-700' : 'text-amber-300'}`}>
-                  Для повышения точности: {readiness.analysis_missing.slice(0, 4).join(', ')}
-                  {readiness.analysis_missing.length > 4 ? '…' : ''}
-                </div>
-              )}
-            </div>
 
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className={`text-xs font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Готовность досье</div>
-                <div className={`text-xs font-mono font-bold ${readiness.dossier_percent >= 90 ? 'text-emerald-400' : readiness.dossier_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
-                  {readiness.dossier_percent}%
-                </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#02040A] border-[#172036] text-slate-300'}`}>
+                  {liveSummary.exact_matches.length} точных
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-amber-950/30 border-amber-500/20 text-amber-300'}`}>
+                  {clarificationCount} уточнений
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-600' : 'bg-[#02040A] border-[#172036] text-slate-400'}`}>
+                  {liveSummary.not_applicable.length} исключено
+                </span>
               </div>
-              <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
-                <div className="h-full bg-purple-400 transition-all" style={{ width: `${readiness.dossier_percent}%` }} />
-              </div>
-              <div className={`text-[11px] mt-2 leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
-                Досье можно начинать формировать и при неполных данных; система покажет, какие сведения и документы ещё нужны для подачи.
-              </div>
-              {readiness.dossier_missing.length > 0 && (
-                <div className={`text-[11px] mt-2 ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
-                  Не хватает: {readiness.dossier_missing.slice(0, 4).join(', ')}
-                  {readiness.dossier_missing.length > 4 ? '…' : ''}
+
+              {(readiness.analysis_missing.length > 0 || readiness.dossier_missing.length > 0) && (
+                <div className={`mt-3 p-3 rounded-xl border text-[11px] ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#02040A] border-[#172036] text-slate-300'}`}>
+                  <div className="font-bold mb-1">Следующие шаги</div>
+                  <div>
+                    {readiness.analysis_missing.length > 0
+                      ? `Для точности анализа: ${readiness.analysis_missing.slice(0, 3).join(', ')}${readiness.analysis_missing.length > 3 ? '…' : ''}`
+                      : 'Анализ заполнен достаточно для уверенного предварительного заключения.'}
+                  </div>
                 </div>
               )}
+
+              <button
+                onClick={handleOpenReport}
+                className={`mt-3 w-full px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  isLight ? 'bg-neutral-900 hover:bg-black text-white' : 'bg-[#00E5FF] hover:bg-[#33ebff] text-slate-950 shadow-[0_0_18px_rgba(0,229,255,0.35)]'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Сформировать отчёт
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Аналитическое резюме и запуск экспертного отчёта (Реестр программ Даму снизу скрыт) */}
-        <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${
-          isLight 
-            ? 'bg-white border-neutral-200 shadow-sm' 
-            : 'bg-[#060814]/90 border-[#172036] shadow-lg'
+        {/* Краткий результат под рабочим столом */}
+        <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+          isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/90 border-[#172036] shadow-lg'
         }`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
-              isLight ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-cyan-950/60 text-[#00E5FF] border-cyan-500/40 shadow-[0_0_12px_rgba(0,229,255,0.3)]'
-            }`}>
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className={`text-sm font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
-                {language === 'kk' ? 'Кешенді сараптамалық қорытынды' : language === 'en' ? 'Comprehensive Expert Assessment' : language === 'zh' ? '综合专家评估意见' : 'Комплексное экспертное заключение'}
-              </div>
-              <div className={`text-xs font-mono mt-0.5 ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
-                {language === 'kk' 
-                  ? `Анықталған мемлекеттік қолдау шаралары: ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} бағыт`
-                  : language === 'en'
-                    ? `For region ${query.location_name || 'RK'} and OKED ${query.oked_code || 'all'}, ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} subsidized measures matched`
-                    : language === 'zh'
-                      ? `针对 ${query.location_name || '哈萨克斯坦全境'} 及行业代码 ${query.oked_code || '全部'}，已匹配 ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} 项国家扶持措施`
-                      : `Для региона ${query.location_name || 'РК'} и ОКЭД ${query.oked_code || 'все'} подобрано ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} субсидируемых мер`}
-              </div>
+          <div>
+            <div className={`text-sm font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Предварительный результат</div>
+            <div className={`text-xs mt-1 ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
+              {query.location_name && query.oked_code
+                ? `Для ${query.location_name} и ОКЭД ${query.oked_code}: ${liveSummary.exact_matches.length} точных, ${liveSummary.possible_matches.length} возможных, ${clarificationCount} параметров требуют уточнения.`
+                : 'Заполните ОКЭД и территорию — система сразу покажет предварительный подбор программ.'}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleOpenReport}
-              className={`w-full md:w-auto px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 touch-manipulation active:scale-[0.98] ${
-                isLight
-                  ? 'bg-neutral-900 hover:bg-black text-white shadow-sm'
-                  : 'bg-[#00E5FF] hover:bg-[#33ebff] text-slate-950 shadow-[0_0_20px_rgba(0,229,255,0.45)]'
-              }`}
-            >
-              <FileText className="w-4 h-4 shrink-0" />
-              <span>{t.form.generateReport}</span>
-            </button>
-          </div>
+          <button
+            onClick={handleOpenReport}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              isLight ? 'bg-neutral-900 hover:bg-black text-white' : 'bg-cyan-950/60 hover:bg-cyan-900/80 text-[#00E5FF] border border-cyan-500/40'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Открыть заключение
+          </button>
         </div>
 
         {/* Информационный футер с дисклеймером NC Consulting */}
