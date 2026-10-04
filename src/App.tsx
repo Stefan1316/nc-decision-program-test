@@ -25,7 +25,7 @@ const INITIAL_QUERY: UserQuery = {
   region_name: '',
   district_id: '',
   district_name: '',
-  settlement_type: 'any',
+  settlement_type: '',
   settlement_type_confirmed: false,
   entity_type: '',
   business_status: '',
@@ -41,6 +41,7 @@ const INITIAL_QUERY: UserQuery = {
 
 export default function App() {
   const [query, setQuery] = useState<UserQuery>(INITIAL_QUERY);
+  const [analyzedQuery, setAnalyzedQuery] = useState<UserQuery | null>(null);
 
   // Тема оформления: 'neon' (глубокий черный фон с неон-свечением) или 'light' (бело-чёрная)
   const [theme, setTheme] = useState<ThemeMode>('neon');
@@ -64,8 +65,19 @@ export default function App() {
     setQuery((prev) => ({ ...prev, ...updated }));
   };
 
+  const handleAnalyze = () => {
+    setAnalyzedQuery({ ...query });
+  };
+
+  const handleOpenReport = () => {
+    const snapshot = { ...query };
+    setAnalyzedQuery(snapshot);
+    setIsReportOpen(true);
+  };
+
   const handleReset = () => {
     setQuery(INITIAL_QUERY);
+    setAnalyzedQuery(null);
   };
 
   const handleToggleTheme = () => {
@@ -143,10 +155,15 @@ export default function App() {
     setActiveView('map');
   };
 
-  // Расчёт программ через decisionEngine
-  const summary = useMemo(() => {
+  // Предварительная оценка пересчитывается на лету и используется только для подсказок.
+  const liveSummary = useMemo(() => {
     return evaluatePrograms(query);
   }, [query]);
+
+  // Финальный отчёт всегда строится по зафиксированному снимку параметров.
+  const reportSummary = useMemo(() => {
+    return evaluatePrograms(analyzedQuery || query);
+  }, [analyzedQuery, query]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
@@ -193,7 +210,7 @@ export default function App() {
             {/* Быстрая кнопка открытия отчета */}
             <button
               type="button"
-              onClick={() => setIsReportOpen(true)}
+              onClick={handleOpenReport}
               className={`px-3.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 isLight 
                   ? 'bg-neutral-900 hover:bg-black text-white' 
@@ -301,10 +318,12 @@ export default function App() {
           <QueryInputPanel
             query={query}
             onChange={handleQueryChange}
-            isBroadOked={summary.is_broad_oked}
-            broadWarning={summary.broad_oked_warning}
+            isBroadOked={liveSummary.is_broad_oked}
+            broadWarning={liveSummary.broad_oked_warning}
             theme={theme}
             language={language}
+            clarificationCount={liveSummary.needs_clarification.length + liveSummary.needs_verification.length}
+            onAnalyze={handleAnalyze}
           />
         )}
 
@@ -352,19 +371,19 @@ export default function App() {
               </div>
               <div className={`text-xs font-mono mt-0.5 ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
                 {language === 'kk' 
-                  ? `Анықталған мемлекеттік қолдау шаралары: ${summary.exact_matches.length + summary.possible_matches.length} бағыт`
+                  ? `Анықталған мемлекеттік қолдау шаралары: ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} бағыт`
                   : language === 'en'
-                    ? `For region ${query.location_name || 'RK'} and OKED ${query.oked_code || 'all'}, ${summary.exact_matches.length + summary.possible_matches.length} subsidized measures matched`
+                    ? `For region ${query.location_name || 'RK'} and OKED ${query.oked_code || 'all'}, ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} subsidized measures matched`
                     : language === 'zh'
-                      ? `针对 ${query.location_name || '哈萨克斯坦全境'} 及行业代码 ${query.oked_code || '全部'}，已匹配 ${summary.exact_matches.length + summary.possible_matches.length} 项国家扶持措施`
-                      : `Для региона ${query.location_name || 'РК'} и ОКЭД ${query.oked_code || 'все'} подобрано ${summary.exact_matches.length + summary.possible_matches.length} субсидируемых мер`}
+                      ? `针对 ${query.location_name || '哈萨克斯坦全境'} 及行业代码 ${query.oked_code || '全部'}，已匹配 ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} 项国家扶持措施`
+                      : `Для региона ${query.location_name || 'РК'} и ОКЭД ${query.oked_code || 'все'} подобрано ${liveSummary.exact_matches.length + liveSummary.possible_matches.length} субсидируемых мер`}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsReportOpen(true)}
+              onClick={handleOpenReport}
               className={`w-full md:w-auto px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 touch-manipulation active:scale-[0.98] ${
                 isLight
                   ? 'bg-neutral-900 hover:bg-black text-white shadow-sm'
@@ -392,7 +411,7 @@ export default function App() {
       <ReportExportModal
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
-        summary={summary}
+        summary={reportSummary}
         theme={theme}
         language={language}
       />
