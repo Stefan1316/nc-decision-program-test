@@ -29,7 +29,7 @@ interface MioPrioritiesMapProps {
   currentOkedCode: string;
   onSelectRegion: (regionName: string, level: 'city' | 'region', regionId?: string) => void;
   onSelectOked?: (code: string) => void;
-  onSelectDistrict?: (districtName: string, settlementType?: 'monotown' | 'village' | 'regional_city' | 'republican_city', districtId?: string, regionId?: string, regionName?: string) => void;
+  onSelectDistrict?: (districtName: string, settlementType?: 'monotown' | 'village' | 'regional_city' | 'republican_city' | 'any', districtId?: string, regionId?: string, regionName?: string) => void;
   theme: ThemeMode;
   language: Language;
   onClose?: () => void;
@@ -222,7 +222,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
       ? 'monotown'
       : district.type === 'city'
         ? (isRepublicanCityRegion ? 'republican_city' : 'regional_city')
-        : 'village';
+        : 'any';
 
     // Сначала фиксируем регион, затем конкретную территорию.
     onSelectRegion(
