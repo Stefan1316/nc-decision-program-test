@@ -12,6 +12,8 @@ interface QueryInputPanelProps {
   broadWarning?: string;
   theme?: ThemeMode;
   language?: Language;
+  clarificationCount?: number;
+  onAnalyze?: () => void;
 }
 
 export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
@@ -20,7 +22,9 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
   isBroadOked,
   broadWarning,
   theme = 'neon',
-  language = 'ru'
+  language = 'ru',
+  clarificationCount = 0,
+  onAnalyze
 }) => {
   const [isTerritoryDropdownOpen, setIsTerritoryDropdownOpen] = useState(false);
   const [territorySearchTerm, setTerritorySearchTerm] = useState('');
@@ -28,12 +32,27 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
   const [districtSearchTerm, setDistrictSearchTerm] = useState('');
   
   // Дополнительные параметры
-  const [showAdvanced, setShowAdvanced] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const districtDropdownRef = useRef<HTMLDivElement>(null);
 
   const t = translations[language].form;
   const isLight = theme === 'light';
+
+  const advancedFilledCount = [
+    query.settlement_type && query.settlement_type !== 'any' ? 1 : 0,
+    query.amount_kzt ? 1 : 0,
+    query.purpose ? 1 : 0,
+    query.instrument_preference ? 1 : 0,
+    query.entity_type ? 1 : 0,
+    query.operating_years !== null && query.operating_years !== undefined ? 1 : 0
+  ].reduce((sum, value) => sum + value, 0);
+
+  const baseReady = Boolean(
+    query.oked_code &&
+    query.region_name &&
+    (query.location_level !== 'region' || query.district_name)
+  );
 
   // Закрытие при клике вне выпадающего списка
   useEffect(() => {
@@ -478,6 +497,13 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
             >
               <SlidersHorizontal className={`w-4 h-4 ${isLight ? 'text-purple-600' : 'text-purple-400'} shrink-0`} />
               <span className="text-xs sm:text-sm">{t.additionalParams}</span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
+                clarificationCount > 0
+                  ? (isLight ? 'text-amber-700 border-amber-300 bg-amber-50' : 'text-amber-300 border-amber-500/30 bg-amber-950/30')
+                  : (isLight ? 'text-neutral-500 border-neutral-300 bg-white' : 'text-slate-400 border-[#172036] bg-[#02040A]')
+              }`}>
+                {advancedFilledCount}/6 заполнено{clarificationCount > 0 ? ` · ${clarificationCount} уточнений` : ''}
+              </span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
             </button>
             <span className={`text-xs ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
@@ -486,6 +512,12 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
           </div>
 
           {showAdvanced && (
+            <>
+            <div className={`mb-3 px-3 py-2 rounded-xl border text-[11px] leading-relaxed ${
+              isLight ? 'bg-sky-50 border-sky-200 text-sky-800' : 'bg-cyan-950/20 border-cyan-500/20 text-slate-300'
+            }`}>
+              Эти поля не заполняются автоматически. Укажите только известные параметры — система использует их для уточнения eligibility конкретных программ.
+            </div>
             <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 p-4 rounded-xl border ${
               isLight ? 'bg-neutral-50/80 border-neutral-200' : 'bg-[#02040A]/90 border-[#172036]'
             }`}>
@@ -499,10 +531,10 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                   <span className="truncate">{t.settlementType}</span>
                 </label>
                 <select
-                  value={query.settlement_type || 'any'}
+                  value={query.settlement_type || ''}
                   onChange={(e) => onChange({
                     settlement_type: e.target.value as any,
-                    settlement_type_confirmed: e.target.value !== 'any'
+                    settlement_type_confirmed: e.target.value !== '' && e.target.value !== 'any'
                   })}
                   className={`w-full border rounded-xl px-3 py-2 text-xs font-mono transition-all focus:outline-none ${
                     isLight 
@@ -510,7 +542,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="any">{t.settlementAny}</option>
+                  <option value="">Не выбрано</option>
+                  <option value="any">Любой тип</option>
                   <option value="republican_city">{t.settlementRepCity}</option>
                   <option value="monotown">{t.settlementMonotown}</option>
                   <option value="village">{t.settlementVillage}</option>
@@ -631,7 +664,32 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
               </div>
 
             </div>
+            </>
           )}
+
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className={`text-[11px] ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
+              {baseReady
+                ? (clarificationCount > 0
+                    ? `Предварительная оценка готова. Для повышения точности есть ${clarificationCount} уточнений.`
+                    : 'Основные данные заполнены. Можно зафиксировать текущий анализ.')
+                : 'Сначала укажите ОКЭД и территорию проекта.'}
+            </div>
+            <button
+              type="button"
+              disabled={!baseReady}
+              onClick={onAnalyze}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                !baseReady
+                  ? 'opacity-40 cursor-not-allowed bg-slate-700 text-slate-300'
+                  : isLight
+                    ? 'bg-neutral-900 text-white hover:bg-black'
+                    : 'bg-[#00E5FF] text-slate-950 hover:bg-[#33ebff] shadow-[0_0_16px_rgba(0,229,255,0.35)]'
+              }`}
+            >
+              Проверить параметры
+            </button>
+          </div>
         </div>
 
       </div>
