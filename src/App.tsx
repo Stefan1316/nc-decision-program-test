@@ -109,7 +109,7 @@ export default function App() {
       district_name: '',
       settlement_type: ['almaty-city', 'astana-city', 'shymkent-city'].includes(regionId || '')
         ? 'republican_city'
-        : 'any',
+        : '',
       settlement_type_confirmed: ['almaty-city', 'astana-city', 'shymkent-city'].includes(regionId || '')
     }));
   };
@@ -342,12 +342,12 @@ export default function App() {
                 region_name: regionName || query.region_name,
                 district_id: districtId || '',
                 district_name: districtName,
-                settlement_type: settlementType || 'any',
+                settlement_type: settlementType || '',
                 settlement_type_confirmed: settlementType === 'republican_city' || settlementType === 'regional_city' || settlementType === 'monotown'
               })}
               theme={theme}
               language={language}
-              onOpenReport={() => setIsReportOpen(true)}
+              onOpenReport={handleOpenReport}
               onClose={() => setActiveView('search')}
             />
           </div>
