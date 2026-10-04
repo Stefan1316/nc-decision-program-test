@@ -94,10 +94,15 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
     : [];
 
   const districtOptions = matrixDistricts.map((record, index) => {
-    const lower = record.districtName.toLowerCase();
+    const lower = record.districtName.toLowerCase().trim();
     const isCity = lower.startsWith('г.') || lower.startsWith('город');
-    const isMonotown = ['рудный', 'лисаковск', 'сарань', 'балхаш', 'темиртау', 'сатпаев', 'жезказган', 'экибастуз', 'риддер', 'жанатас', 'степногорск']
-      .some(name => lower.includes(name));
+    const cleanPlaceName = lower.startsWith('г.')
+      ? lower.slice(2).trim()
+      : lower.startsWith('город')
+        ? lower.slice(5).trim()
+        : lower;
+    const monotownNames = ['рудный', 'лисаковск', 'сарань', 'балхаш', 'темиртау', 'сатпаев', 'жезказган', 'экибастуз', 'риддер', 'жанатас', 'степногорск'];
+    const isMonotown = isCity && monotownNames.includes(cleanPlaceName);
 
     return {
       id: `${effectiveRegionId}-${index}`,
@@ -129,7 +134,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
       region_name: selected.name,
       district_id: '',
       district_name: '',
-      settlement_type: isRepCity ? 'republican_city' : 'any',
+      settlement_type: isRepCity ? 'republican_city' : '',
       settlement_type_confirmed: isRepCity
     });
     setIsTerritoryDropdownOpen(false);
