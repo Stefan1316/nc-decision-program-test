@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { UserQuery } from './types/damu';
 import { evaluatePrograms } from './logic/decisionEngine';
+import { calculateReadiness } from './logic/readiness';
 import { Header } from './components/Header';
 import { QueryInputPanel } from './components/QueryInputPanel';
 import { MioPrioritiesMap } from './components/MioPrioritiesMap';
@@ -164,6 +165,10 @@ export default function App() {
   const reportSummary = useMemo(() => {
     return evaluatePrograms(analyzedQuery || query);
   }, [analyzedQuery, query]);
+
+  const readiness = useMemo(() => {
+    return calculateReadiness(query, liveSummary);
+  }, [query, liveSummary]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
@@ -352,6 +357,57 @@ export default function App() {
             />
           </div>
         )}
+
+        {/* Готовность анализа и досье */}
+        <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
+          isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/90 border-[#172036] shadow-lg'
+        }`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className={`text-xs font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Готовность анализа</div>
+                <div className={`text-xs font-mono font-bold ${readiness.analysis_percent >= 80 ? 'text-emerald-400' : readiness.analysis_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
+                  {readiness.analysis_percent}%
+                </div>
+              </div>
+              <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
+                <div className="h-full bg-cyan-400 transition-all" style={{ width: `${readiness.analysis_percent}%` }} />
+              </div>
+              <div className={`text-[11px] mt-2 leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
+                {readiness.can_run_preliminary
+                  ? 'Предварительный подбор уже доступен. Недостающие данные снижают точность, но не блокируют результат.'
+                  : 'Для предварительного подбора достаточно указать ОКЭД и территорию проекта.'}
+              </div>
+              {readiness.analysis_missing.length > 0 && (
+                <div className={`text-[11px] mt-2 ${isLight ? 'text-amber-700' : 'text-amber-300'}`}>
+                  Для повышения точности: {readiness.analysis_missing.slice(0, 4).join(', ')}
+                  {readiness.analysis_missing.length > 4 ? '…' : ''}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className={`text-xs font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Готовность досье</div>
+                <div className={`text-xs font-mono font-bold ${readiness.dossier_percent >= 90 ? 'text-emerald-400' : readiness.dossier_percent >= 50 ? 'text-amber-400' : 'text-slate-400'}`}>
+                  {readiness.dossier_percent}%
+                </div>
+              </div>
+              <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`}>
+                <div className="h-full bg-purple-400 transition-all" style={{ width: `${readiness.dossier_percent}%` }} />
+              </div>
+              <div className={`text-[11px] mt-2 leading-relaxed ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
+                Досье можно начинать формировать и при неполных данных; система покажет, какие сведения и документы ещё нужны для подачи.
+              </div>
+              {readiness.dossier_missing.length > 0 && (
+                <div className={`text-[11px] mt-2 ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
+                  Не хватает: {readiness.dossier_missing.slice(0, 4).join(', ')}
+                  {readiness.dossier_missing.length > 4 ? '…' : ''}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Аналитическое резюме и запуск экспертного отчёта (Реестр программ Даму снизу скрыт) */}
         <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${
