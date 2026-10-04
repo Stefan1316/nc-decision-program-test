@@ -123,7 +123,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
       ? 'monotown'
       : district.type === 'city'
         ? 'regional_city'
-        : 'village';
+        : 'any';
 
     onChange({
       location_name: district.name,
