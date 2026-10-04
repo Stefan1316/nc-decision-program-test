@@ -111,6 +111,7 @@ export interface UserQuery {
   district_id?: string;
   district_name?: string;
   settlement_type?: 'republican_city' | 'regional_city' | 'monotown' | 'village' | 'any';
+  settlement_type_confirmed?: boolean;
   
   // Step 2 Clarification fields
   entity_type?: 'ИП' | 'ТОО' | 'Сельхозкооператив' | 'Юрлицо МФЦА' | 'Любое' | '';
