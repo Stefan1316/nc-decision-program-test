@@ -17,7 +17,7 @@ function weightedScore(items: Array<{ weight: number; ok: boolean }>): number {
 
 export function calculateReadiness(query: UserQuery, summary: EvaluationSummary): ReadinessResult {
   const territoryReady = Boolean(query.region_name || query.location_name);
-  const districtRequired = query.location_level === 'region' || Boolean(query.region_id && !query.district_name);
+  const districtRequired = query.location_level === 'region';
   const districtReady = !districtRequired || Boolean(query.district_name);
 
   const analysisMissing: string[] = [];
