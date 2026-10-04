@@ -110,7 +110,7 @@ export interface UserQuery {
   region_name?: string;
   district_id?: string;
   district_name?: string;
-  settlement_type?: 'republican_city' | 'regional_city' | 'monotown' | 'village' | 'any';
+  settlement_type?: 'republican_city' | 'regional_city' | 'monotown' | 'village' | 'any' | '';
   settlement_type_confirmed?: boolean;
   
   // Step 2 Clarification fields
