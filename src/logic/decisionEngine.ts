@@ -358,15 +358,22 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       prog.id.startsWith('damu.guarantee.enterprise_development.')
     ) {
       if (prog.id.endsWith('.small_town')) {
-        if (query.settlement_type === 'monotown' || query.settlement_type === 'village') {
+        const settlementConfirmed = query.settlement_type_confirmed === true;
+        if (
+          settlementConfirmed &&
+          (query.settlement_type === 'monotown' || query.settlement_type === 'village')
+        ) {
           okedMatchLevel = 'compatible';
-          matched_reasons.push('Тип населённого пункта явно указан как моногород или сельская территория.');
-        } else if (query.settlement_type === 'regional_city' || query.settlement_type === 'republican_city') {
+          matched_reasons.push('Тип населённого пункта явно подтверждён пользователем как моногород или сельская территория.');
+        } else if (
+          settlementConfirmed &&
+          (query.settlement_type === 'regional_city' || query.settlement_type === 'republican_city')
+        ) {
           okedMatchLevel = 'excluded';
           restrictions.push('Направление предназначено для моно-/малых городов и сельских населённых пунктов; выбранный тип территории этому не соответствует.');
         } else {
           okedMatchLevel = 'verification_needed';
-          missing_inputs.push('Указать тип населённого пункта: моногород, малый город или сельский населённый пункт');
+          missing_inputs.push('Подтвердить тип населённого пункта: моногород, малый город или сельский населённый пункт');
           clarificationSet.add('location');
         }
       } else if (prog.id.endsWith('.stock_exchange')) {
