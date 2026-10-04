@@ -1,3 +1,5 @@
+import { ISKER_OFFICIAL_RECORDS } from './iskerOfficialRecords';
+
 /**
  * База данных приоритетных направлений и ОКЭД Местных исполнительных органов (МИО / Акиматов)
  * и совместных региональных программ льготного финансирования и субсидирования с АО «ФРП «Даму».
@@ -770,7 +772,7 @@ export function checkMioEligibility(
   recommendation: string;
 } {
   const profile = getMioProfile(regionIdOrName);
-  const cleanOked = okedCode.trim();
+  const cleanOked = okedCode.trim().replace(/,/g, '.').replace(/\s+/g, '');
 
   if (!profile) {
     return {
@@ -787,34 +789,34 @@ export function checkMioEligibility(
       matchedOkeds: [],
       regionalPrograms: profile.programs,
       regionProfile: profile,
-      recommendation: `В ${profile.regionName} действует ${profile.programs.length} региональных программ МИО/Даму. Введите код ОКЭД для проверки льготной ставки.`
+      recommendation: `В ${profile.regionName} доступны региональные данные МИО. Введите код ОКЭД для точной проверки по официальной матрице.`
     };
   }
 
-  const matched: MioOkedItem[] = [];
+  const exactRows = ISKER_OFFICIAL_RECORDS.filter(
+    row => row.regionId === profile.regionId && row.okedCode.trim() === cleanOked
+  );
 
-  for (const item of profile.priorityOkeds) {
-    if (
-      cleanOked === item.code ||
-      cleanOked.startsWith(item.code) ||
-      item.code.startsWith(cleanOked)
-    ) {
-      matched.push(item);
-    }
-  }
+  const uniqueMatches = Array.from(
+    new Map(exactRows.map(row => [
+      row.okedCode,
+      {
+        code: row.okedCode,
+        name: row.activityName,
+        category: 'Приоритет МИО',
+        priorityLevel: 'high' as const
+      }
+    ])).values()
+  );
 
-  const isPriority = matched.length > 0;
-
-  let recommendation = '';
-  if (isPriority) {
-    recommendation = `ОКЭД ${cleanOked} входит в перечень региональных приоритетов акимата (${profile.regionName}). Доступны сниженные ставки от 6% до 7,5% по региональным программам софинансирования Даму и МИО.`;
-  } else {
-    recommendation = `ОКЭД ${cleanOked} не входит в узкий региональный перечень МИО для ${profile.regionName}, но может претендовать на общереспубликанские программы («Өрлеу», ЕКП, «Іскер аймақ»).`;
-  }
+  const isPriority = exactRows.length > 0;
+  const recommendation = isPriority
+    ? `ОКЭД ${cleanOked} подтверждён в официальной матрице МИО для ${profile.regionName}. Для точного заключения необходимо учитывать конкретный город/район, где присутствует эта запись.`
+    : `ОКЭД ${cleanOked} не найден как точная запись в официальной матрице МИО для ${profile.regionName}. Общереспубликанские программы проверяются отдельно.`;
 
   return {
     isPriority,
-    matchedOkeds: matched,
+    matchedOkeds: uniqueMatches,
     regionalPrograms: profile.programs,
     regionProfile: profile,
     recommendation
@@ -825,19 +827,12 @@ export function checkMioEligibility(
  * Получить список идентификаторов регионов, где данный код ОКЭД находится в приоритете МИО
  */
 export function getRegionsWithPriorityOked(okedCode: string): string[] {
-  const clean = okedCode.trim();
+  const clean = okedCode.trim().replace(/,/g, '.').replace(/\s+/g, '');
   if (!clean) return [];
 
-  const matchedRegionIds: string[] = [];
-
-  for (const [regionId, profile] of Object.entries(MIO_REGIONS_DATABASE)) {
-    const hasMatch = profile.priorityOkeds.some(
-      item => clean === item.code || clean.startsWith(item.code) || item.code.startsWith(clean)
-    );
-    if (hasMatch) {
-      matchedRegionIds.push(regionId);
-    }
-  }
-
-  return matchedRegionIds;
+  return Array.from(new Set(
+    ISKER_OFFICIAL_RECORDS
+      .filter(row => row.okedCode.trim() === clean)
+      .map(row => row.regionId)
+  ));
 }
