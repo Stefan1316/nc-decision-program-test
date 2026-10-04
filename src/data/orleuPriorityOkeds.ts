@@ -1,3 +1,4 @@
+import { okedHierarchyMatches } from '../logic/okedMatcher';
 /**
  * Официальный Перечень приоритетных видов экономической деятельности (ОКЭД)
  * программы «Өрлеу» АО «Фонд развития предпринимательства «Даму».
@@ -503,25 +504,17 @@ export function checkOrleuEligibility(inputOked: string): {
   for (const item of ORLEU_PRIORITY_OKEDS) {
     const itemCode = item.code;
 
-    // Точное совпадение
-    if (clean === itemCode) {
-      return { matched: true, matchedItem: item, reason: `ОКЭД ${clean} точно входит в приоритетный перечень «Өрлеу» (${item.section}): ${item.name}` };
-    }
-
-    // Вложенный подкласс (например, введен '10.51.1', а в базе '10.5' или введен '49.41', а в базе '49.41.0')
-    if (clean.startsWith(itemCode + '.') || itemCode.startsWith(clean + '.')) {
-      return { matched: true, matchedItem: item, reason: `ОКЭД ${clean} относится к приоритетной группе ${itemCode} программы «Өрлеу» (${item.section}): ${item.name}` };
-    }
-
-    // Если код в базе 3-значный (например, 10.1), а пользователь ввел 10.11 или 10.12
-    const cleanPrefix3 = clean.split('.').slice(0, 2).join('.');
-    if (cleanPrefix3 === itemCode) {
-      return { matched: true, matchedItem: item, reason: `ОКЭД ${clean} входит в подгруппу ${itemCode} программы «Өрлеу» (${item.section}): ${item.name}` };
-    }
-
-    // Для 5-значных кодов транспорта (49.20.0, 49.41.0, 52.10.1 и т.д.)
-    if (itemCode.startsWith(clean)) {
-      return { matched: true, matchedItem: item, reason: `ОКЭД ${clean} соответствует приоритетному направлению ${itemCode} программы «Өрлеу» (${item.section}): ${item.name}` };
+    // Единый иерархический matcher: поддерживает группы вида 25.1 -> подкласс 25.11,
+    // а также более детальные записи 49.41.0 и аналогичные случаи.
+    if (okedHierarchyMatches(clean, itemCode)) {
+      const exact = clean === itemCode;
+      return {
+        matched: true,
+        matchedItem: item,
+        reason: exact
+          ? `ОКЭД ${clean} точно входит в приоритетный перечень «Өрлеу» (${item.section}): ${item.name}`
+          : `ОКЭД ${clean} относится к приоритетной группе ${itemCode} программы «Өрлеу» (${item.section}): ${item.name}`
+      };
     }
   }
 
