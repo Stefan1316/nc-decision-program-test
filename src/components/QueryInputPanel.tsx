@@ -110,7 +110,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
       region_name: selected.name,
       district_id: '',
       district_name: '',
-      settlement_type: isRepCity ? 'republican_city' : 'any'
+      settlement_type: isRepCity ? 'republican_city' : 'any',
+      settlement_type_confirmed: isRepCity
     });
     setIsTerritoryDropdownOpen(false);
     setTerritorySearchTerm('');
@@ -130,7 +131,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
       location_level: 'district',
       district_id: district.id,
       district_name: district.name,
-      settlement_type: settlementType
+      settlement_type: settlementType,
+      settlement_type_confirmed: district.type === 'monotown' || district.type === 'city'
     });
     setIsDistrictDropdownOpen(false);
     setDistrictSearchTerm('');
@@ -498,7 +500,10 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                 </label>
                 <select
                   value={query.settlement_type || 'any'}
-                  onChange={(e) => onChange({ settlement_type: e.target.value as any })}
+                  onChange={(e) => onChange({
+                    settlement_type: e.target.value as any,
+                    settlement_type_confirmed: e.target.value !== 'any'
+                  })}
                   className={`w-full border rounded-xl px-3 py-2 text-xs font-mono transition-all focus:outline-none ${
                     isLight 
                       ? 'bg-white border-neutral-300 text-neutral-900 focus:border-black' 
