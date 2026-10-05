@@ -14,6 +14,7 @@ interface QueryInputPanelProps {
   language?: Language;
   clarificationCount?: number;
   onAnalyze?: () => void;
+  analysisState?: 'idle' | 'stale' | 'done';
 }
 
 export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
@@ -24,7 +25,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
   theme = 'neon',
   language = 'ru',
   clarificationCount = 0,
-  onAnalyze
+  onAnalyze,
+  analysisState = 'idle'
 }) => {
   const [isTerritoryDropdownOpen, setIsTerritoryDropdownOpen] = useState(false);
   const [territorySearchTerm, setTerritorySearchTerm] = useState('');
@@ -674,25 +676,37 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
 
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className={`text-[11px] ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
-              {baseReady
-                ? (clarificationCount > 0
-                    ? `Предварительная оценка готова. Для повышения точности есть ${clarificationCount} уточнений.`
-                    : 'Основные данные заполнены. Можно зафиксировать текущий анализ.')
-                : 'Сначала укажите ОКЭД и территорию проекта.'}
+              {!baseReady
+                ? 'Сначала укажите ОКЭД и территорию проекта.'
+                : analysisState === 'done'
+                  ? 'Анализ зафиксирован. Если измените параметры проекта, потребуется повторный анализ.'
+                  : analysisState === 'stale'
+                    ? 'Параметры изменены после последнего анализа. Проведите анализ повторно.'
+                    : (clarificationCount > 0
+                        ? `Предварительный подбор уже рассчитан. Для повышения точности есть ${clarificationCount} уточнений.`
+                        : 'Основные данные заполнены. Можно провести анализ проекта.')}
             </div>
             <button
               type="button"
-              disabled={!baseReady}
+              disabled={!baseReady || analysisState === 'done'}
               onClick={onAnalyze}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                !baseReady
-                  ? 'opacity-40 cursor-not-allowed bg-slate-700 text-slate-300'
+                !baseReady || analysisState === 'done'
+                  ? analysisState === 'done'
+                    ? isLight
+                      ? 'cursor-default bg-emerald-50 border border-emerald-200 text-emerald-700'
+                      : 'cursor-default bg-emerald-950/30 border border-emerald-500/30 text-emerald-300'
+                    : 'opacity-40 cursor-not-allowed bg-slate-700 text-slate-300'
                   : isLight
                     ? 'bg-neutral-900 text-white hover:bg-black'
                     : 'bg-[#00E5FF] text-slate-950 hover:bg-[#33ebff] shadow-[0_0_16px_rgba(0,229,255,0.35)]'
               }`}
             >
-              Проверить параметры
+              {analysisState === 'done'
+                ? '✓ Анализ выполнен'
+                : analysisState === 'stale'
+                  ? 'Провести повторный анализ'
+                  : 'Провести анализ'}
             </button>
           </div>
         </div>
