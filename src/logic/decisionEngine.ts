@@ -122,7 +122,7 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     } 
     
-    // Isker Aymak: точная проверка по региону + району/городу + иерархии ОКЭД
+    // Isker Aymak: точная проверка по региону + району/городу + точному коду ОКЭД
     else if (prog.id === 'damu.subsidy.isker_aymak') {
       const isExcluded23 = cleanCode.startsWith('23.63');
       const isExcluded24 = ['24.10', '24.46', '24.51', '24.52'].some(ex => cleanCode.startsWith(ex));
@@ -148,6 +148,11 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
           } else if (iskerCheck.matched) {
             okedMatchLevel = 'exact';
             matched_reasons.push(iskerCheck.reason);
+          } else if (iskerCheck.classificationNeedsVerification) {
+            okedMatchLevel = 'verification_needed';
+            matched_reasons.push(iskerCheck.reason);
+            missing_inputs.push('Подтвердить классификационную связь детального ОКЭД с кодом, указанным в официальной матрице МИО');
+            clarificationSet.add('oked');
           } else {
             okedMatchLevel = 'excluded';
             restrictions.push(iskerCheck.reason);
@@ -158,6 +163,12 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
             matched_reasons.push(iskerCheck.reason);
             missing_inputs.push('Конкретный город/район для точной проверки «Іскер аймақ»');
             clarificationSet.add('location');
+          } else if (iskerCheck.classificationNeedsVerification) {
+            okedMatchLevel = 'verification_needed';
+            matched_reasons.push(iskerCheck.reason);
+            missing_inputs.push('Конкретный город/район и подтверждение классификационной связи ОКЭД');
+            clarificationSet.add('location');
+            clarificationSet.add('oked');
           } else {
             okedMatchLevel = 'excluded';
             restrictions.push(iskerCheck.reason);
