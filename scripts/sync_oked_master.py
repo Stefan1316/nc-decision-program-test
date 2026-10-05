@@ -3,6 +3,7 @@
 
 Official source:
 https://stat.gov.kz/ru/classifiers/statistical/21/
+This generator is the CI counterpart of scripts/sync_oked_master.mjs.
 Classifier: ОКЭД НК РК 03-2019
 Effective: 2020-01-01
 BNS page updated: 2026-07-01 (as checked when integration was added).
