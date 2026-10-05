@@ -6,6 +6,8 @@ import {
   ExternalLink, Sparkles, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import { ThemeMode, Language, translations } from '../i18n/translations';
+import { resolveOked } from '../data/okedMaster';
+import { buildFundingFallback } from '../logic/fundingFallback';
 
 interface ReportExportModalProps {
   isOpen: boolean;
@@ -33,7 +35,9 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
 
   // Единый отчёт по результатам decisionEngine для всех программ базы.
   const cleanCode = query.oked_code.trim().replace(/,/g, '.').replace(/\s+/g, '');
-  const okedName = cleanCode;
+  const masterOked = resolveOked(cleanCode);
+  const okedName = masterOked.record?.nameRu || cleanCode;
+  const fallback = buildFundingFallback(summary);
 
   const eligibleResults = [
     ...summary.exact_matches,
@@ -327,6 +331,46 @@ ${excludedProgramRows.map((p, i) => `
               </div>
             )}
           </div>
+
+          {fallback.show && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className={`text-xs sm:text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
+                  isLight ? 'text-neutral-900' : 'text-amber-300'
+                }`}>
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Альтернативный маршрут финансирования</span>
+                </h3>
+                <span className={`text-[10px] font-mono ${isLight ? 'text-neutral-500' : 'text-slate-500'}`}>
+                  без подмены льготной ставки
+                </span>
+              </div>
+              <div className={`p-3.5 rounded-xl border ${
+                isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-950/15 border-amber-700/30'
+              }`}>
+                <div className={`font-semibold text-xs sm:text-sm ${isLight ? 'text-neutral-900' : 'text-amber-200'}`}>
+                  {fallback.headline}
+                </div>
+                <div className={`text-[11px] leading-relaxed mt-1 ${isLight ? 'text-neutral-700' : 'text-slate-300'}`}>
+                  {fallback.explanation}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {fallback.routes.map((route) => (
+                  <div key={route.id} className={`p-3.5 rounded-xl border ${
+                    isLight ? 'bg-neutral-50 border-neutral-200' : 'bg-[#080A1A] border-[#2A2360]'
+                  }`}>
+                    <div className={`font-semibold text-xs ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
+                      {route.title}
+                    </div>
+                    <div className={`text-[11px] leading-relaxed mt-1.5 ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
+                      {route.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {excludedProgramRows.length > 0 && (
             <div className="space-y-3">
