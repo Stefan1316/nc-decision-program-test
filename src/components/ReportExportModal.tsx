@@ -82,7 +82,7 @@ export const ReportExportModal: React.FC<ReportExportModalProps> = ({
   const handleDownloadDocx = async () => {
     try {
       setIsExportingDocx(true);
-      const blob = await generateDocxReport(query, okedName, passedCorePrograms, excludedProgramRows);
+      const blob = await generateDocxReport(query, okedName, passedCorePrograms, excludedProgramRows, fallback);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
