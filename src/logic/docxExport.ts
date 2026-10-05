@@ -20,7 +20,13 @@ export async function generateDocxReport(
   query: UserQuery,
   okedName: string,
   corePrograms: CoreProgramExport[],
-  excludedPrograms: Array<{ id: string; title: string; instrument: string; reasons: string[]; sourceId: string; url: string }> = []
+  excludedPrograms: Array<{ id: string; title: string; instrument: string; reasons: string[]; sourceId: string; url: string }> = [],
+  fallback?: {
+    show: boolean;
+    headline: string;
+    explanation: string;
+    routes: Array<{ title: string; description: string }>;
+  }
 ): Promise<Blob> {
   const normalizedOked = (query.oked_code || '').trim().replace(/,/g, '.').replace(/\\s+/g, '');
   const territoryText = query.district_name
@@ -152,6 +158,31 @@ export async function generateDocxReport(
               spacing: { after: 160 }
             })
           ]),
+
+          ...(fallback?.show ? [
+            new Paragraph({
+              text: '3. АЛЬТЕРНАТИВНЫЙ МАРШРУТ ФИНАНСИРОВАНИЯ',
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 220, after: 120 }
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: fallback.headline + '. ', bold: true }),
+                new TextRun({ text: fallback.explanation })
+              ],
+              spacing: { after: 100 }
+            }),
+            ...fallback.routes.flatMap((route, idx) => [
+              new Paragraph({
+                children: [new TextRun({ text: `${idx + 1}. ${route.title}`, bold: true })],
+                spacing: { before: 80, after: 30 }
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: route.description })],
+                spacing: { after: 80 }
+              })
+            ])
+          ] : []),
 
           ...(excludedPrograms.length > 0 ? [
             new Paragraph({
