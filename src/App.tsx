@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { UserQuery } from './types/damu';
 import { evaluatePrograms } from './logic/decisionEngine';
 import { calculateReadiness } from './logic/readiness';
@@ -43,6 +43,7 @@ const INITIAL_QUERY: UserQuery = {
 export default function App() {
   const [query, setQuery] = useState<UserQuery>(INITIAL_QUERY);
   const [analyzedQuery, setAnalyzedQuery] = useState<UserQuery | null>(null);
+  const analysisResultRef = useRef<HTMLDivElement>(null);
 
   // Тема оформления: 'neon' (глубокий черный фон с неон-свечением) или 'light' (бело-чёрная)
   const [theme, setTheme] = useState<ThemeMode>('neon');
@@ -68,6 +69,9 @@ export default function App() {
 
   const handleAnalyze = () => {
     setAnalyzedQuery({ ...query });
+    window.setTimeout(() => {
+      analysisResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
   };
 
   const handleOpenReport = () => {
@@ -169,6 +173,11 @@ export default function App() {
   const readiness = useMemo(() => {
     return calculateReadiness(query, liveSummary);
   }, [query, liveSummary]);
+
+  const analysisState: 'idle' | 'stale' | 'done' = useMemo(() => {
+    if (!analyzedQuery) return 'idle';
+    return JSON.stringify(analyzedQuery) === JSON.stringify(query) ? 'done' : 'stale';
+  }, [analyzedQuery, query]);
 
   const clarificationCount = useMemo(() => {
     const buckets = new Set<string>();
@@ -295,6 +304,7 @@ export default function App() {
               language={language}
               clarificationCount={clarificationCount}
               onAnalyze={handleAnalyze}
+              analysisState={analysisState}
             />
 
             <div className={`p-4 rounded-2xl border transition-all ${
@@ -369,15 +379,27 @@ export default function App() {
         </div>
 
         {/* Краткий результат под рабочим столом */}
-        <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        <div
+          ref={analysisResultRef}
+          className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+            analysisState === 'done'
+              ? isLight
+                ? 'ring-2 ring-emerald-200'
+                : 'ring-1 ring-emerald-500/40 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
+              : ''
+          } ${
           isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/90 border-[#172036] shadow-lg'
         }`}>
           <div>
             <div className={`text-sm font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Предварительный результат</div>
             <div className={`text-xs mt-1 ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
-              {query.location_name && query.oked_code
-                ? `Для ${query.location_name} и ОКЭД ${query.oked_code}: ${liveSummary.exact_matches.length} точных, ${liveSummary.possible_matches.length} возможных, ${clarificationCount} параметров требуют уточнения.`
-                : 'Заполните ОКЭД и территорию — система сразу покажет предварительный подбор программ.'}
+              {analysisState === 'done' && analyzedQuery
+                ? `Анализ зафиксирован для ${analyzedQuery.location_name} и ОКЭД ${analyzedQuery.oked_code}: ${reportSummary.exact_matches.length} точных, ${reportSummary.possible_matches.length} возможных, ${reportSummary.needs_clarification.length + reportSummary.needs_verification.length} программ требуют уточнения/проверки.`
+                : analysisState === 'stale'
+                  ? 'Параметры проекта изменены после последнего анализа. Предварительный подбор уже обновлён автоматически — нажмите «Провести повторный анализ», чтобы зафиксировать новый результат.'
+                  : query.location_name && query.oked_code
+                    ? `Предварительный подбор: для ${query.location_name} и ОКЭД ${query.oked_code} найдено ${liveSummary.exact_matches.length} точных и ${liveSummary.possible_matches.length} возможных совпадений. Нажмите «Провести анализ», чтобы зафиксировать результат.`
+                    : 'Заполните ОКЭД и территорию — система сразу покажет предварительный подбор программ.'}
             </div>
           </div>
           <button
