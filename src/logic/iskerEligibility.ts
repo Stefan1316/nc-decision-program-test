@@ -7,6 +7,9 @@ export interface IskerEligibilityResult {
   matchedCode?: string;
   matchedName?: string;
   matchingDistricts?: string[];
+  classificationNeedsVerification?: boolean;
+  candidateCode?: string;
+  candidateName?: string;
   reason: string;
 }
 
@@ -44,17 +47,41 @@ export function checkIskerDistrictEligibility(
   }
 
   if (!districtName) {
-    const matchingDistricts = records
-      .filter(r => r.okeds.some(o => okedHierarchyMatches(cleanOked, o.code)))
+    const exactDistricts = records
+      .filter(r => r.okeds.some(o => normalizeOkedCode(o.code) === cleanOked))
       .map(r => r.districtName);
 
+    const hierarchyDistricts = records
+      .filter(r => r.okeds.some(o =>
+        normalizeOkedCode(o.code) !== cleanOked &&
+        okedHierarchyMatches(cleanOked, o.code)
+      ))
+      .map(r => r.districtName);
+
+    if (exactDistricts.length > 0) {
+      return {
+        matched: true,
+        districtFound: false,
+        matchingDistricts: exactDistricts,
+        reason: `ОКЭД ${cleanOked} имеет точные записи в матрице «Іскер аймақ» выбранного региона. Для точного заключения требуется выбрать конкретный город/район.`
+      };
+    }
+
+    if (hierarchyDistricts.length > 0) {
+      return {
+        matched: false,
+        districtFound: false,
+        matchingDistricts: hierarchyDistricts,
+        classificationNeedsVerification: true,
+        reason: `В матрице «Іскер аймақ» найден связанный код другого уровня классификатора для ОКЭД ${cleanOked}. Автоматически считать это точным региональным приоритетом нельзя; требуется верификация классификационной связи и конкретной территории.`
+      };
+    }
+
     return {
-      matched: matchingDistricts.length > 0,
+      matched: false,
       districtFound: false,
-      matchingDistricts,
-      reason: matchingDistricts.length > 0
-        ? `ОКЭД ${cleanOked} встречается в матрице «Іскер аймақ» выбранного региона. Для точного заключения требуется выбрать конкретный город/район.`
-        : `ОКЭД ${cleanOked} не найден в районной матрице «Іскер аймақ» выбранного региона.`
+      matchingDistricts: [],
+      reason: `ОКЭД ${cleanOked} не найден в районной матрице «Іскер аймақ» выбранного региона.`
     };
   }
 
@@ -72,20 +99,32 @@ export function checkIskerDistrictEligibility(
     };
   }
 
-  const matchedOked = district.okeds.find(o => okedHierarchyMatches(cleanOked, o.code));
-  if (!matchedOked) {
+  const exactOked = district.okeds.find(o => normalizeOkedCode(o.code) === cleanOked);
+  if (exactOked) {
+    return {
+      matched: true,
+      districtFound: true,
+      matchedCode: exactOked.code,
+      matchedName: exactOked.name,
+      reason: `ОКЭД ${cleanOked} имеет точную запись ${exactOked.code} «${exactOked.name}» в матрице «Іскер аймақ» для территории «${district.districtName}».`
+    };
+  }
+
+  const hierarchyCandidate = district.okeds.find(o => okedHierarchyMatches(cleanOked, o.code));
+  if (hierarchyCandidate) {
     return {
       matched: false,
       districtFound: true,
-      reason: `ОКЭД ${cleanOked} не входит в приоритетный перечень «Іскер аймақ» для территории «${district.districtName}».`
+      classificationNeedsVerification: true,
+      candidateCode: hierarchyCandidate.code,
+      candidateName: hierarchyCandidate.name,
+      reason: `Для территории «${district.districtName}» в матрице есть код ${hierarchyCandidate.code} «${hierarchyCandidate.name}», связанный с ОКЭД ${cleanOked} на другом уровне классификатора. По правилам матрицы это нельзя автоматически считать точным совпадением; требуется подтверждение классификационной связи.`
     };
   }
 
   return {
-    matched: true,
+    matched: false,
     districtFound: true,
-    matchedCode: matchedOked.code,
-    matchedName: matchedOked.name,
-    reason: `ОКЭД ${cleanOked} соответствует группе ${matchedOked.code} «${matchedOked.name}» в матрице «Іскер аймақ» для территории «${district.districtName}».`
+    reason: `ОКЭД ${cleanOked} не входит в приоритетный перечень «Іскер аймақ» для территории «${district.districtName}».`
   };
 }
