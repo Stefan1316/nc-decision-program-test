@@ -75,7 +75,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
   }[status];
 
   return (
-    <div className={`relative rounded-2xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between border ${
+    <div className={`nc-surface-card relative rounded-2xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between border ${
       isLight 
         ? 'bg-white shadow-sm hover:shadow-md' 
         : 'bg-[#060814] shadow-lg backdrop-blur-md'
