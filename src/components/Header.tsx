@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NcConsultingLogo } from './Logo';
-import { RefreshCw, Sun, Moon, Globe, ChevronDown } from 'lucide-react';
+import { RefreshCw, Sun, Moon, Globe, ChevronDown, Menu } from 'lucide-react';
 import { ThemeMode, Language, translations } from '../i18n/translations';
 
 interface HeaderProps {
@@ -14,6 +14,7 @@ interface HeaderProps {
   onOpenKnowledgeBase?: () => void;
   onOpenAcceptanceTests?: () => void;
   isMapActive?: boolean;
+  onOpenMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,7 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   language,
   onSelectLanguage,
-  onToggleLanguage
+  onToggleLanguage,
+  onOpenMenu
 }) => {
   const t = translations[language].header;
   const isLight = theme === 'light';
@@ -89,6 +91,20 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${
+              isLight
+                ? 'bg-white text-neutral-700 border-neutral-300'
+                : 'bg-[#0D1127] text-slate-200 border-[#24304C]'
+            }`}
+            title="Открыть меню"
+            aria-label="Открыть меню"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+
           <div className="relative">
             <button
               type="button"
