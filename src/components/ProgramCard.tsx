@@ -144,7 +144,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         }`}>
           {/* 1. Ставка заёмщика */}
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
+            <span className={`text-[11px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
               isLight ? 'text-neutral-500 font-medium' : 'text-slate-400'
             }`}>
               <Percent className={`w-3 h-3 ${isLight ? 'text-sky-600' : 'text-[#00E5FF]'}`} />
@@ -159,7 +159,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
 
           {/* 2. Субсидирование */}
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
+            <span className={`text-[11px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
               isLight ? 'text-neutral-500 font-medium' : 'text-slate-400'
             }`}>
               <Percent className={`w-3 h-3 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
@@ -174,7 +174,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
 
           {/* 3. Максимальный лимит */}
           <div className="space-y-1 col-span-2 sm:col-span-1">
-            <span className={`text-[10px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
+            <span className={`text-[11px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
               isLight ? 'text-neutral-500 font-medium' : 'text-slate-400'
             }`}>
               <Banknote className={`w-3 h-3 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
@@ -189,7 +189,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
 
           {/* 4. Срок */}
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
+            <span className={`text-[11px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
               isLight ? 'text-neutral-500 font-medium' : 'text-slate-400'
             }`}>
               <Calendar className="w-3 h-3 text-slate-400" />
@@ -202,7 +202,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
 
           {/* 5. Гарантия Фонда Даму */}
           <div className="space-y-1 col-span-2">
-            <span className={`text-[10px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
+            <span className={`text-[11px] uppercase tracking-wider font-mono flex items-center gap-1.5 ${
               isLight ? 'text-neutral-500 font-medium' : 'text-slate-400'
             }`}>
               <ShieldCheck className={`w-3 h-3 ${isLight ? 'text-sky-600' : 'text-sky-400'}`} />
@@ -223,6 +223,9 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         <div className="mt-4 space-y-2 text-xs">
           {matched_reasons.length > 0 && (
             <div className="space-y-1.5">
+              <div className={`text-xs font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                Почему система показывает эту программу
+              </div>
               {matched_reasons.map((r, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className={`text-xs font-mono font-bold shrink-0 mt-0.5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>✓</span>
@@ -234,6 +237,9 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
 
           {restrictions.length > 0 && (
             <div className={`space-y-1.5 pt-2 border-t ${isLight ? 'border-neutral-100' : 'border-[#172036]'}`}>
+              <div className={`text-xs font-bold mb-2 ${isLight ? 'text-rose-800' : 'text-rose-300'}`}>
+                Ограничения и причины несоответствия
+              </div>
               {restrictions.map((res, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className={`text-xs font-mono font-bold shrink-0 mt-0.5 ${isLight ? 'text-rose-600' : 'text-rose-400'}`}>✕</span>
@@ -253,7 +259,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               <span className={`text-[11px] font-mono uppercase tracking-wider font-bold block mb-1.5 ${
                 isLight ? 'text-purple-800' : 'text-purple-400'
               }`}>
-                {isKk ? 'Шарттарды нақтылау:' : 'Для окончательного одобрения:'}
+                {isKk ? 'Келесі қадамдар:' : 'Что нужно сделать дальше:'}
               </span>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 {missing_inputs.slice(0, 3).map((item, idx) => (
@@ -270,7 +276,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         isLight ? 'border-neutral-100 text-neutral-500' : 'border-[#172036] text-slate-400'
       }`}>
         <div className="flex items-center gap-2">
-          <span>{program.last_checked}</span>
+          <span>Проверено: {program.last_checked}</span>
           <span className={isLight ? 'text-neutral-300' : 'text-slate-700'}>·</span>
           <span>Качество: <strong className={`uppercase ${isLight ? 'text-neutral-900' : 'text-slate-200'}`}>{program.data_quality}</strong></span>
         </div>
@@ -289,7 +295,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               }`}
               title={`${s.title_ru} (${s.source_id})`}
             >
-              <span>{s.source_id}</span>
+              <span className="max-w-[220px] truncate">Источник: {s.title_ru || s.source_id}</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
           ))}
