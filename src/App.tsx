@@ -205,7 +205,7 @@ export default function App() {
   }, [liveSummary]);
 
   return (
-    <div className={`min-h-[100dvh] flex flex-col font-sans transition-colors duration-300 overflow-x-clip relative ${
+    <div className={`h-[100dvh] md:h-auto md:min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden overflow-y-auto md:overflow-y-visible relative overscroll-contain ${
       isLight 
         ? 'bg-[#F8FAFC] text-slate-900 selection:bg-neutral-200' 
         : 'bg-[#080A1A] text-[#F8FAFC] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
@@ -238,7 +238,7 @@ export default function App() {
           onToggleTheme={handleToggleTheme}
           onReset={handleReset}
         />
-        <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 py-4 sm:py-6 lg:py-7 space-y-5 sm:space-y-7">
+        <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 pt-4 sm:pt-6 lg:pt-7 pb-40 md:pb-8 space-y-5 sm:space-y-7">
         
         {/* Баннер сервиса */}
         <div className={`text-left space-y-2 border-b pb-5 sm:pb-6 ${
