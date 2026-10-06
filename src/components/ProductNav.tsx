@@ -27,14 +27,14 @@ interface ProductNavProps {
 }
 
 const desktopItems = [
-  { label: 'Dashboard', icon: LayoutDashboard },
+  { label: 'Dashboard', icon: LayoutDashboard, comingSoon: true },
   { label: 'Новый анализ проекта', icon: SearchCheck, active: true },
-  { label: 'Funding Navigator', icon: Route },
-  { label: 'Проекты', icon: FolderKanban },
-  { label: 'Программы', icon: Landmark },
-  { label: 'База знаний', icon: Database },
-  { label: 'AI Expert', icon: Bot, ai: true },
-  { label: 'История', icon: History }
+  { label: 'Funding Navigator', icon: Route, comingSoon: true },
+  { label: 'Проекты', icon: FolderKanban, comingSoon: true },
+  { label: 'Программы', icon: Landmark, comingSoon: true },
+  { label: 'База знаний', icon: Database, comingSoon: true },
+  { label: 'AI Expert', icon: Bot, ai: true, comingSoon: true },
+  { label: 'История', icon: History, comingSoon: true }
 ];
 
 export const ProductNav: React.FC<ProductNavProps> = ({
@@ -59,7 +59,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
           </div>
 
           <nav className="p-2 space-y-0.5 overflow-y-auto">
-            {desktopItems.map(({ label, icon: Icon, active, ai }) => (
+            {desktopItems.map(({ label, icon: Icon, active, ai, comingSoon }) => (
               <button
                 key={label}
                 type="button"
@@ -77,6 +77,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                 {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 rounded-r bg-[#00E5FF]" />}
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${ai && !active ? 'text-[#8B5CFF]' : ''}`} />
                 <span className="truncate">{label}</span>
+                {comingSoon && <span className={`ml-auto px-1.5 py-0.5 text-[9px] rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>Скоро</span>}
                 {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10B981]" />}
                 {ai && <span className="ml-auto px-1.5 py-0.5 text-[8px] rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">AI</span>}
               </button>
@@ -210,7 +211,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
               </div>
 
               <nav className="space-y-1">
-                {desktopItems.map(({ label, icon: Icon, active, ai }) => (
+                {desktopItems.map(({ label, icon: Icon, active, ai, comingSoon }) => (
                   <button
                     key={label}
                     type="button"
@@ -227,6 +228,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${ai ? 'text-[#8B5CFF]' : ''}`} />
                     <span className="flex-1">{label}</span>
+                    {comingSoon && <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>Скоро</span>}
                     {active && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
                     {ai && <span className="text-[9px] px-1.5 py-0.5 rounded border border-violet-500/30 text-violet-300">AI</span>}
                   </button>
