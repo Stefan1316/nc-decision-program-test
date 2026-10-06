@@ -206,7 +206,7 @@ export default function App() {
   }, [liveSummary]);
 
   return (
-    <div data-theme={isLight ? 'light' : 'dark'} className={`h-[100dvh] md:h-auto md:min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden overflow-y-auto md:overflow-y-visible relative overscroll-contain ${
+    <div data-theme={isLight ? 'light' : 'dark'} className={`nc-app-shell min-h-[100dvh] flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
       isLight 
         ? 'bg-[#F8FAFC] text-slate-900 selection:bg-neutral-200' 
         : 'bg-[#080A1A] text-[#F8FAFC] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
