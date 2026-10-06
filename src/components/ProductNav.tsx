@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   LayoutDashboard,
   SearchCheck,
@@ -22,6 +22,8 @@ interface ProductNavProps {
   onSelectLanguage: (language: Language) => void;
   onToggleTheme: () => void;
   onReset: () => void;
+  isDrawerOpen: boolean;
+  onDrawerOpenChange: (open: boolean) => void;
 }
 
 const desktopItems = [
@@ -40,10 +42,11 @@ export const ProductNav: React.FC<ProductNavProps> = ({
   language,
   onSelectLanguage,
   onToggleTheme,
-  onReset
+  onReset,
+  isDrawerOpen,
+  onDrawerOpenChange
 }) => {
   const isLight = theme === 'light';
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <>
@@ -154,7 +157,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
               key={label}
               type="button"
               aria-disabled={!active}
-              onClick={() => label === 'Ещё' && setDrawerOpen(true)}
+              onClick={() => label === 'Ещё' && onDrawerOpenChange(true)}
               className={`min-h-[48px] rounded-lg flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
               active
                 ? isLight ? 'text-neutral-950 bg-neutral-100' : 'text-[#00E5FF] bg-cyan-950/30'
@@ -167,26 +170,12 @@ export const ProductNav: React.FC<ProductNavProps> = ({
         </div>
       </nav>
 
-      <button
-        type="button"
-        onClick={() => setDrawerOpen(true)}
-        className={`hidden md:flex lg:hidden fixed top-[76px] left-4 z-50 w-11 h-11 rounded-xl border items-center justify-center shadow-lg backdrop-blur-xl ${
-          isLight
-            ? 'bg-white/95 border-neutral-200 text-neutral-900'
-            : 'bg-[#0D1127]/95 border-[#24304C] text-[#F8FAFC]'
-        }`}
-        aria-label="Открыть меню"
-        title="Меню"
-      >
-        <MoreHorizontal className="w-5 h-5" />
-      </button>
-
-      {drawerOpen && (
+      {isDrawerOpen && (
         <div className="lg:hidden fixed inset-0 z-[70]">
           <button
             type="button"
             aria-label="Закрыть меню"
-            onClick={() => setDrawerOpen(false)}
+            onClick={() => onDrawerOpenChange(false)}
             className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
           />
 
@@ -201,7 +190,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
               <NcConsultingLogo className="h-9" theme={theme} />
               <button
                 type="button"
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => onDrawerOpenChange(false)}
                 className={`w-9 h-9 rounded-lg border flex items-center justify-center text-lg ${
                   isLight
                     ? 'bg-white border-slate-200 text-slate-600'
@@ -225,7 +214,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                   <button
                     key={label}
                     type="button"
-                    onClick={() => active && setDrawerOpen(false)}
+                    onClick={() => active && onDrawerOpenChange(false)}
                     className={`w-full min-h-[46px] flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold border transition-all ${
                       active
                         ? isLight
