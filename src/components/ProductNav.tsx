@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard,
   SearchCheck,
@@ -43,6 +43,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
   onReset
 }) => {
   const isLight = theme === 'light';
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <>
@@ -149,7 +150,12 @@ export const ProductNav: React.FC<ProductNavProps> = ({
             ['AI Expert', Bot, false],
             ['Ещё', MoreHorizontal, false]
           ].map(([label, Icon, active]: any) => (
-            <button key={label} type="button" aria-disabled={!active} className={`min-h-[48px] rounded-lg flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
+            <button
+              key={label}
+              type="button"
+              aria-disabled={!active}
+              onClick={() => label === 'Ещё' && setDrawerOpen(true)}
+              className={`min-h-[48px] rounded-lg flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
               active
                 ? isLight ? 'text-neutral-950 bg-neutral-100' : 'text-[#00E5FF] bg-cyan-950/30'
                 : isLight ? 'text-neutral-400' : 'text-slate-500'
@@ -160,6 +166,141 @@ export const ProductNav: React.FC<ProductNavProps> = ({
           ))}
         </div>
       </nav>
+
+      <button
+        type="button"
+        onClick={() => setDrawerOpen(true)}
+        className={`hidden md:flex lg:hidden fixed top-[76px] left-4 z-50 w-11 h-11 rounded-xl border items-center justify-center shadow-lg backdrop-blur-xl ${
+          isLight
+            ? 'bg-white/95 border-neutral-200 text-neutral-900'
+            : 'bg-[#0D1127]/95 border-[#24304C] text-[#F8FAFC]'
+        }`}
+        aria-label="Открыть меню"
+        title="Меню"
+      >
+        <MoreHorizontal className="w-5 h-5" />
+      </button>
+
+      {drawerOpen && (
+        <div className="lg:hidden fixed inset-0 z-[70]">
+          <button
+            type="button"
+            aria-label="Закрыть меню"
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+          />
+
+          <aside className={`absolute inset-y-0 left-0 w-[86vw] max-w-[340px] border-r shadow-2xl flex flex-col ${
+            isLight
+              ? 'bg-[#F8FAFC] border-slate-200'
+              : 'bg-[#0D1127] border-[#24304C]'
+          }`}>
+            <div className={`px-4 py-4 border-b flex items-center justify-between ${
+              isLight ? 'border-slate-200' : 'border-[#24304C]'
+            }`}>
+              <NcConsultingLogo className="h-9" theme={theme} />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className={`w-9 h-9 rounded-lg border flex items-center justify-center text-lg ${
+                  isLight
+                    ? 'bg-white border-slate-200 text-slate-600'
+                    : 'bg-[#080A1A] border-[#24304C] text-slate-300'
+                }`}
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              <div className={`text-[10px] uppercase tracking-[0.16em] font-bold px-2 mb-2 ${
+                isLight ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                Личный кабинет
+              </div>
+
+              <nav className="space-y-1">
+                {desktopItems.map(({ label, icon: Icon, active, ai }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => active && setDrawerOpen(false)}
+                    className={`w-full min-h-[46px] flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold border transition-all ${
+                      active
+                        ? isLight
+                          ? 'bg-white text-slate-950 border-slate-300 shadow-sm'
+                          : 'bg-[#131938] text-[#00E5FF] border-cyan-500/30'
+                        : isLight
+                          ? 'bg-transparent text-slate-600 border-transparent hover:bg-white'
+                          : 'bg-transparent text-slate-300 border-transparent hover:bg-[#131938]'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${ai ? 'text-[#8B5CFF]' : ''}`} />
+                    <span className="flex-1">{label}</span>
+                    {active && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
+                    {ai && <span className="text-[9px] px-1.5 py-0.5 rounded border border-violet-500/30 text-violet-300">AI</span>}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className={`p-3 border-t space-y-3 ${
+              isLight ? 'border-slate-200 bg-white/70' : 'border-[#24304C] bg-[#080A1A]/70'
+            }`}>
+              <div className="grid grid-cols-4 gap-1">
+                {([
+                  ['ru','РУС'],['kk','ҚАЗ'],['en','ENG'],['zh','中文']
+                ] as [Language,string][]).map(([code,label]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => onSelectLanguage(code)}
+                    className={`min-h-[34px] rounded-lg text-[10px] font-bold border ${
+                      language === code
+                        ? isLight
+                          ? 'bg-slate-950 text-white border-slate-950'
+                          : 'bg-[#00E5FF] text-[#080A1A] border-[#00E5FF]'
+                        : isLight
+                          ? 'bg-white text-slate-500 border-slate-200'
+                          : 'bg-[#0D1127] text-slate-400 border-[#24304C]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className={`min-h-[40px] flex-1 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 ${
+                    isLight
+                      ? 'bg-white border-slate-200 text-slate-700'
+                      : 'bg-[#0D1127] border-[#24304C] text-slate-300'
+                  }`}
+                >
+                  {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-[#CBA13A]" />}
+                  {isLight ? 'Тёмная' : 'Светлая'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onReset}
+                  className={`min-h-[40px] flex-1 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 ${
+                    isLight
+                      ? 'bg-white border-slate-200 text-slate-700'
+                      : 'bg-[#0D1127] border-[#24304C] text-slate-300'
+                  }`}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Сбросить
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </>
   );
 };
