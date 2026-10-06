@@ -59,6 +59,7 @@ export default function App() {
   const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
   const [isAcceptanceTestsOpen, setIsAcceptanceTestsOpen] = useState(false);
   const [isMobileMapOpen, setIsMobileMapOpen] = useState(false);
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
 
   // Режим работы: 'map' (интерактивная карта Даму), 'search' (поисковик) или 'split' (совмещенный)
   const [activeView, setActiveView] = useState<'map' | 'search' | 'split'>('split');
@@ -227,6 +228,7 @@ export default function App() {
         onSelectLanguage={handleSelectLanguage}
         onToggleLanguage={handleToggleLanguage}
         isMapActive={activeView === 'map' || activeView === 'split'}
+        onOpenMenu={() => setIsNavDrawerOpen(true)}
       />
 
       {/* Основной контент */}
@@ -237,6 +239,8 @@ export default function App() {
           onSelectLanguage={handleSelectLanguage}
           onToggleTheme={handleToggleTheme}
           onReset={handleReset}
+          isDrawerOpen={isNavDrawerOpen}
+          onDrawerOpenChange={setIsNavDrawerOpen}
         />
         <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 pt-4 sm:pt-6 lg:pt-7 pb-40 md:pb-8 space-y-5 sm:space-y-7">
         
