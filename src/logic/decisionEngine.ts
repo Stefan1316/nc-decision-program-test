@@ -250,7 +250,10 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     }
 
-    // Guarantee Fund 1: broad eligibility, but amount and known exclusions matter
+    // Guarantee Fund 1: regulatory eligibility must be confirmed independently from OKED.
+    // Official parameters: financing <= 7bn KZT; guarantee <= 85% and <= 3.5bn KZT;
+    // purposes: investment / working capital / refinancing; fee 1.5% of guarantee,
+    // paid initially and annually on the outstanding guarantee balance.
     else if (prog.id === 'damu.guarantee.guarantee_fund_1') {
       const prohibitedExcise =
         cleanCode.startsWith('12') ||
@@ -259,24 +262,45 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
 
       if (prohibitedExcise) {
         okedMatchLevel = 'excluded';
-        restrictions.push(`ОКЭД ${cleanCode} относится к подакцизной деятельности, которая указана в исключениях Гарантийного фонда 1.`);
-      } else if (miningWithoutProcessing) {
-        okedMatchLevel = 'verification_needed';
-        matched_reasons.push('Для Гарантийного фонда 1 добывающие проекты требуют подтверждения наличия дальнейшей переработки.');
-        missing_inputs.push('Подтверждение переработки добываемого сырья');
+        restrictions.push(`ОКЭД ${cleanCode} относится к подакцизной деятельности, указанной в исключениях Гарантийного фонда 1.`);
+      } else if (query.overdue_debt_days !== null && query.overdue_debt_days !== undefined && query.overdue_debt_days > 0) {
+        okedMatchLevel = 'excluded';
+        restrictions.push('По официальным требованиям гарантии у предпринимателя не должно быть текущей просроченной задолженности перед кредитором.');
       } else {
-        okedMatchLevel = 'compatible';
-        matched_reasons.push('Гарантийный фонд 1 доступен широкому кругу отраслей при соблюдении исключений программы.');
+        okedMatchLevel = miningWithoutProcessing ? 'verification_needed' : 'compatible';
+
+        if (miningWithoutProcessing) {
+          matched_reasons.push('Добывающий проект может рассматриваться только при подтверждении дальнейшей переработки извлечённых/добытых материалов.');
+          missing_inputs.push('Подтверждение дальнейшей переработки добываемого сырья');
+        } else {
+          matched_reasons.push('По виду деятельности явное отраслевое исключение Гарантийного фонда 1 не выявлено; окончательная применимость определяется всеми условиями Правил гарантирования.');
+        }
 
         if (!query.amount_kzt) {
-          missing_inputs.push('Сумма финансирования для проверки лимита Гарантийного фонда 1 (до 7 млрд тг)');
+          missing_inputs.push('Сумма финансирования для проверки лимита Гарантийного фонда 1 (не более 7 млрд тг)');
           clarificationSet.add('amount');
+        } else if (query.amount_kzt > 7000000000) {
+          okedMatchLevel = 'excluded';
+          restrictions.push('Сумма финансирования превышает 7 млрд тг; для этого диапазона Гарантийный фонд 1 не применяется.');
         }
 
         if (!query.purpose) {
-          missing_inputs.push('Цель финансирования: инвестиции, оборотные средства или рефинансирование');
+          missing_inputs.push('Цель финансирования: инвестиции, пополнение оборотных средств или рефинансирование');
           clarificationSet.add('purpose');
         }
+
+        if (!query.entity_type) {
+          missing_inputs.push('Подтвердить статус субъекта частного предпринимательства / допустимого участника программы');
+          clarificationSet.add('entity');
+        }
+
+        if (query.overdue_debt_days === null || query.overdue_debt_days === undefined) {
+          missing_inputs.push('Подтвердить отсутствие текущей просроченной задолженности перед кредитором');
+          clarificationSet.add('debt');
+        }
+
+        missing_inputs.push('Проверить кредитную историю за последние 36 месяцев по критериям Правил гарантирования');
+        missing_inputs.push('Подтвердить отсутствие иных исключений Правил гарантирования, включая ограничения п. 4 ст. 24 Предпринимательского кодекса РК');
       }
     }
 
@@ -504,15 +528,8 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     }
 
-    // Дополнительная фиксация статуса ГФ1 после проверки общих параметров.
-    if (prog.id === 'damu.guarantee.guarantee_fund_1' && okedMatchLevel !== 'excluded') {
-      if (query.amount_kzt && query.amount_kzt <= 7000000000 && query.purpose && restrictions.length === 0) {
-        okedMatchLevel = 'exact';
-        matched_reasons.push('Сумма и цель финансирования соответствуют базовым параметрам Гарантийного фонда 1.');
-      } else if (!query.amount_kzt || !query.purpose) {
-        okedMatchLevel = 'compatible';
-      }
-    }
+    // GF1 intentionally remains "clarification / verification" until all regulatory
+    // conditions are confirmed. Amount + purpose alone are insufficient for an exact match.
 
     // 5. Final Status Calculation
     let status: ProgramStatus = 'possible_match';
