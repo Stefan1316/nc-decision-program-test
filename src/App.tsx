@@ -8,13 +8,16 @@ import { MioPrioritiesMap } from './components/MioPrioritiesMap';
 import { ReportExportModal } from './components/ReportExportModal';
 import { KnowledgeBaseModal } from './components/KnowledgeBaseModal';
 import { AcceptanceTestsModal } from './components/AcceptanceTestsModal';
+import { ProductNav } from './components/ProductNav';
 import { ThemeMode, Language, translations } from './i18n/translations';
 import { 
   FileText, 
   Map, 
   Sparkles,
   Search,
-  Layers
+  Layers,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const INITIAL_QUERY: UserQuery = {
@@ -55,6 +58,7 @@ export default function App() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
   const [isAcceptanceTestsOpen, setIsAcceptanceTestsOpen] = useState(false);
+  const [isMobileMapOpen, setIsMobileMapOpen] = useState(false);
 
   // Режим работы: 'map' (интерактивная карта Даму), 'search' (поисковик) или 'split' (совмещенный)
   const [activeView, setActiveView] = useState<'map' | 'search' | 'split'>('split');
@@ -226,7 +230,9 @@ export default function App() {
       />
 
       {/* Основной контент */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3.5 sm:px-6 py-6 sm:py-8 space-y-5 sm:space-y-7">
+      <div className="flex flex-1 min-w-0">
+        <ProductNav theme={theme} />
+        <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 py-4 sm:py-6 lg:py-7 space-y-5 sm:space-y-7">
         
         {/* Баннер сервиса */}
         <div className={`text-left space-y-2 border-b pb-5 sm:pb-6 ${
@@ -246,7 +252,10 @@ export default function App() {
             <button
               type="button"
               onClick={handleOpenReport}
-              className={`px-3.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              disabled={analysisState !== 'done'}
+              className={`px-3.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                analysisState !== 'done' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+              } ${
                 isLight 
                   ? 'bg-neutral-900 hover:bg-black text-white' 
                   : 'bg-cyan-950/60 hover:bg-cyan-900/80 text-[#00E5FF] border-cyan-500/40 shadow-[0_0_10px_rgba(0,229,255,0.3)]'
@@ -270,8 +279,26 @@ export default function App() {
         </div>
 
         {/* Единый рабочий стол: карта + параметры + readiness */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-          <div className="xl:col-span-7 min-w-0">
+        <div className="md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMobileMapOpen((v) => !v)}
+            className={`w-full nc-touch rounded-xl border px-3.5 py-2.5 flex items-center justify-between text-xs font-bold ${
+              isLight
+                ? 'bg-white border-neutral-200 text-neutral-900'
+                : 'bg-[#060814] border-[#172036] text-[#F4F7FF]'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Map className="w-4 h-4 text-[#00E5FF]" />
+              {isMobileMapOpen ? 'Скрыть карту' : 'Открыть карту'}
+            </span>
+            {isMobileMapOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-start">
+          <div className={`order-2 md:order-1 xl:col-span-7 min-w-0 ${isMobileMapOpen ? 'block' : 'hidden md:block'}`}>
             <MioPrioritiesMap
               compactMode
               currentLocationName={query.location_name}
@@ -294,7 +321,7 @@ export default function App() {
             />
           </div>
 
-          <div className="xl:col-span-5 min-w-0 xl:sticky xl:top-4 space-y-4">
+          <div className="order-1 md:order-2 xl:col-span-5 min-w-0 xl:sticky xl:top-20 space-y-4">
             <QueryInputPanel
               query={query}
               onChange={handleQueryChange}
@@ -367,7 +394,10 @@ export default function App() {
 
               <button
                 onClick={handleOpenReport}
-                className={`mt-3 w-full px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                disabled={analysisState !== 'done'}
+                className={`mt-3 w-full px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
+                  analysisState !== 'done' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                } ${
                   isLight ? 'bg-neutral-900 hover:bg-black text-white' : 'bg-[#00E5FF] hover:bg-[#33ebff] text-slate-950 shadow-[0_0_18px_rgba(0,229,255,0.35)]'
                 }`}
               >
@@ -404,7 +434,10 @@ export default function App() {
           </div>
           <button
             onClick={handleOpenReport}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
+            disabled={analysisState !== 'done'}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
+              analysisState !== 'done' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+            } ${
               isLight ? 'bg-neutral-900 hover:bg-black text-white' : 'bg-cyan-950/60 hover:bg-cyan-900/80 text-[#00E5FF] border border-cyan-500/40'
             }`}
           >
@@ -422,7 +455,29 @@ export default function App() {
           <strong className={isLight ? 'text-neutral-900' : 'text-slate-200'}>NC Consulting: </strong>
           {t.footer.disclaimer}
         </div>
-      </main>
+        </main>
+      </div>
+
+      <div className="md:hidden fixed left-3 right-3 bottom-[68px] z-40">
+        <button
+          type="button"
+          disabled={!readiness.can_run_preliminary && analysisState !== 'done'}
+          onClick={analysisState === 'done' ? handleOpenReport : handleAnalyze}
+          className={`w-full min-h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+            (!readiness.can_run_preliminary && analysisState !== 'done')
+              ? 'opacity-40 cursor-not-allowed bg-slate-700 text-slate-300 border-slate-600'
+              : isLight
+                ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg'
+                : 'bg-[#00E5FF] text-slate-950 border-cyan-300 shadow-[0_0_20px_rgba(0,229,255,0.35)]'
+          }`}
+        >
+          {analysisState === 'done'
+            ? 'Сформировать отчёт'
+            : analysisState === 'stale'
+              ? 'Провести повторный анализ'
+              : 'Провести анализ'}
+        </button>
+      </div>
 
       {/* Модальное окно формирования экспертного заключения */}
       <ReportExportModal
