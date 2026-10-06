@@ -26,6 +26,19 @@ export async function generateDocxReport(
     headline: string;
     explanation: string;
     routes: Array<{ title: string; description: string }>;
+    market: {
+      baseRate: { ratePercent: number; effectiveFrom: string; sourceUrl: string; checkedOn: string };
+      products: Array<{
+        institution: string;
+        productName: string;
+        nominalRateText: string;
+        aeirText?: string;
+        amountText?: string;
+        termText?: string;
+        sourceUrl: string;
+        checkedOn: string;
+      }>;
+    };
   }
 ): Promise<Blob> {
   const normalizedOked = (query.oked_code || '').trim().replace(/,/g, '.').replace(/\\s+/g, '');
@@ -180,6 +193,44 @@ export async function generateDocxReport(
               new Paragraph({
                 children: [new TextRun({ text: route.description })],
                 spacing: { after: 80 }
+              })
+            ]),
+            new Paragraph({
+              children: [
+                new TextRun({ text: 'Базовая ставка НБРК: ', bold: true }),
+                new TextRun({ text: `${fallback.market.baseRate.ratePercent}% (с ${fallback.market.baseRate.effectiveFrom}). Базовая ставка не является ставкой банковского кредита.` })
+              ],
+              spacing: { before: 120, after: 80 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: 'РЫНОЧНЫЕ ПРОДУКТЫ БВУ', bold: true, color: '006699' })],
+              spacing: { before: 100, after: 60 }
+            }),
+            ...fallback.market.products.flatMap((product, idx) => [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: `${idx + 1}. ${product.institution} — ${product.productName}`, bold: true })
+                ],
+                spacing: { before: 70, after: 20 }
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Ставка: ', bold: true }),
+                  new TextRun({ text: product.nominalRateText + (product.aeirText ? ` | ${product.aeirText}` : '') })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Параметры: ', bold: true }),
+                  new TextRun({ text: [product.amountText, product.termText].filter(Boolean).join(' | ') || 'По условиям банка' })
+                ]
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Официальный источник: ', bold: true }),
+                  new TextRun({ text: `${product.sourceUrl} (проверено ${product.checkedOn})` })
+                ],
+                spacing: { after: 70 }
               })
             ])
           ] : []),
