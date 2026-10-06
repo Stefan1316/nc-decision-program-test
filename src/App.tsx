@@ -205,7 +205,7 @@ export default function App() {
   }, [liveSummary]);
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
+    <div className={`min-h-[100dvh] flex flex-col font-sans transition-colors duration-300 overflow-x-clip relative ${
       isLight 
         ? 'bg-[#F8FAFC] text-slate-900 selection:bg-neutral-200' 
         : 'bg-[#080A1A] text-[#F8FAFC] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
