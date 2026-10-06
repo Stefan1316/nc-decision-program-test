@@ -32,7 +32,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({ theme }) => {
 
   return (
     <>
-      <aside className={`hidden xl:flex w-60 shrink-0 sticky top-16 h-[calc(100vh-4rem)] border-r flex-col justify-between p-3 ${
+      <aside className={`hidden lg:flex w-52 xl:w-60 shrink-0 sticky top-16 h-[calc(100vh-4rem)] border-r flex-col justify-between p-3 ${
         isLight ? 'bg-white/95 border-neutral-200' : 'bg-[#060814]/95 border-[#172036]'
       }`}>
         <nav className="space-y-1">
