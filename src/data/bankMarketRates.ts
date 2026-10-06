@@ -109,6 +109,52 @@ export const BANK_MARKET_RATES: MarketRateSource[] = [
     dataQuality: 'high'
   },
   {
+    sourceId: 'SRC-FORTE-COLLATERAL-IP-20261006',
+    institution: 'ForteBank',
+    institutionType: 'bank',
+    productName: 'Залоговый кредит для ИП / МСБ',
+    nominalRateText: 'от 19,75% годовых',
+    aeirText: 'ГЭСВ от 23,30% до 35%',
+    amountText: 'до 1 млрд ₸ по опубликованному залоговому продукту',
+    termText: 'до 84 месяцев',
+    borrowerText: 'ИП / МСБ по условиям продукта',
+    purposeText: 'пополнение оборотных средств; инвестиции; рефинансирование',
+    collateralText: 'жилая и коммерческая недвижимость; на официальной странице также указана гарантия Фонда «Даму»',
+    sourceUrl: 'https://business.forte.kz/ru/declaration',
+    checkedOn: '2026-10-06',
+    dataQuality: 'high'
+  },
+  {
+    sourceId: 'SRC-FORTE-MSB-OFFLINE-20261006',
+    institution: 'ForteBank',
+    institutionType: 'bank',
+    productName: 'Офлайн-кредит для бизнеса',
+    nominalRateText: 'от 19,75% годовых',
+    aeirText: 'ГЭСВ от 23,30% до 35%',
+    amountText: 'до 8 млрд ₸',
+    termText: 'до 84 месяцев',
+    borrowerText: 'бизнес-клиенты',
+    purposeText: 'развитие бизнеса; оборудование; новые проекты',
+    sourceUrl: 'https://business.forte.kz/ru/credits',
+    checkedOn: '2026-10-06',
+    dataQuality: 'high'
+  },
+  {
+    sourceId: 'SRC-FORTE-AUTO-MSB-20261006',
+    institution: 'ForteBank',
+    institutionType: 'bank',
+    productName: 'Автокредит для МСБ',
+    nominalRateText: 'от 20% до 30% годовых',
+    aeirText: 'ГЭСВ от 21,94% до 35%',
+    amountText: 'до 100 млн ₸',
+    termText: 'до 60 месяцев',
+    borrowerText: 'МСБ',
+    purposeText: 'приобретение автотранспорта для бизнеса',
+    sourceUrl: 'https://business.forte.kz/ru/credits',
+    checkedOn: '2026-10-06',
+    dataQuality: 'high'
+  },
+  {
     sourceId: 'SRC-BEREKE-IP-ONLINE-20261006',
     institution: 'Bereke Bank',
     institutionType: 'bank',
@@ -142,6 +188,9 @@ export function getMarketFundingSnapshot(query: UserQuery): MarketFundingSnapsho
     if (p.sourceId.includes('HALYK-PREDPRENIMATEL') && amount && amount > 600_000_000) return false;
     if (p.sourceId.includes('HALYK-ONLINE-IP') && amount && amount > 100_000_000) return false;
     if (p.sourceId.includes('BEREKE-IP') && amount && amount > 15_000_000) return false;
+    if (p.sourceId.includes('FORTE-AUTO') && amount && amount > 100_000_000) return false;
+    if (p.sourceId.includes('FORTE-COLLATERAL') && amount && amount > 1_000_000_000) return false;
+    if (p.sourceId.includes('FORTE-MSB-OFFLINE') && amount && amount > 8_000_000_000) return false;
     return true;
   });
 
