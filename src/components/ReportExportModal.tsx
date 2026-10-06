@@ -121,6 +121,15 @@ ${passedCorePrograms.map((p, i) => `
 `).join('\n')}
 
 
+${fallback.show ? `
+### Альтернативный маршрут финансирования
+- **Базовая ставка НБРК:** ${fallback.market.baseRate.ratePercent}% (действует с ${fallback.market.baseRate.effectiveFrom}; не является ставкой банковского кредита)
+${fallback.routes.map((r) => `- **${r.title}:** ${r.description}`).join('\n')}
+
+### Рыночные продукты БВУ
+${fallback.market.products.map((p) => `- **${p.institution} — ${p.productName}:** ${p.nominalRateText}${p.aeirText ? `; ${p.aeirText}` : ''}; ${p.amountText || ''}; ${p.termText || ''}. Источник: ${p.sourceUrl}`).join('\n')}
+` : ''}
+
 ### ${language === 'kk' ? 'Сәйкес келмейтін бағдарламалар' : 'Не подходят по текущим параметрам'}
 ${excludedProgramRows.map((p, i) => `
 #### ${i + 1}. ${p.title}
@@ -366,8 +375,61 @@ ${excludedProgramRows.map((p, i) => `
                     <div className={`text-[11px] leading-relaxed mt-1.5 ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
                       {route.description}
                     </div>
+                    {route.sourceId && (
+                      <div className={`text-[10px] font-mono mt-2 ${isLight ? 'text-neutral-500' : 'text-slate-500'}`}>
+                        {route.sourceId}
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+
+              <div className={`p-3.5 rounded-xl border ${
+                isLight ? 'bg-blue-50/50 border-blue-200' : 'bg-blue-950/15 border-blue-800/40'
+              }`}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className={`font-semibold text-xs sm:text-sm ${isLight ? 'text-neutral-900' : 'text-blue-200'}`}>
+                    Рыночные ставки банков
+                  </div>
+                  <div className={`text-[10px] font-mono ${isLight ? 'text-neutral-600' : 'text-slate-400'}`}>
+                    Базовая ставка НБРК: {fallback.market.baseRate.ratePercent}% · с {fallback.market.baseRate.effectiveFrom}
+                  </div>
+                </div>
+                <div className={`text-[10px] mt-1 ${isLight ? 'text-neutral-500' : 'text-slate-500'}`}>
+                  Базовая ставка НБРК не является ставкой кредита. Ниже — только официально опубликованные банковские продукты, проверенные на {fallback.market.products[0]?.checkedOn || fallback.market.baseRate.checkedOn}.
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {fallback.market.products.map((product) => (
+                    <div key={product.sourceId} className={`p-3 rounded-lg border ${
+                      isLight ? 'bg-white border-neutral-200' : 'bg-[#060814] border-[#172036]'
+                    }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className={`font-semibold text-xs ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>
+                            {product.institution} · {product.productName}
+                          </div>
+                          <div className={`text-[11px] mt-1 ${isLight ? 'text-neutral-700' : 'text-slate-300'}`}>
+                            {product.nominalRateText}{product.aeirText ? ` · ${product.aeirText}` : ''}
+                          </div>
+                          <div className={`text-[10px] mt-1 ${isLight ? 'text-neutral-500' : 'text-slate-500'}`}>
+                            {[product.amountText, product.termText, product.borrowerText].filter(Boolean).join(' · ')}
+                          </div>
+                        </div>
+                        <a
+                          href={product.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={`text-[10px] font-mono shrink-0 flex items-center gap-1 ${
+                            isLight ? 'text-blue-600' : 'text-[#2F8BFF]'
+                          }`}
+                        >
+                          источник <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
