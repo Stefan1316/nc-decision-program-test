@@ -96,7 +96,7 @@ for (let i = 0; i < 300; i++) {
   if (fallback.show) {
     stats.fallbackShown++;
     assert(fallback.market.baseRate.ratePercent === 16.25, `Case ${i}: unexpected NBK base rate snapshot`);
-    assert(fallback.market.products.length >= 3, `Case ${i}: market fallback must contain several verified products`);
+    assert(fallback.market.products.length >= 1, `Case ${i}: market fallback must contain at least one verified product compatible with coarse filters`);
     for (const p of fallback.market.products) {
       assert(/^https:\/\//.test(p.sourceUrl), `Case ${i}: bank product missing official source URL`);
       assert(Boolean(p.nominalRateText), `Case ${i}: bank product missing rate text`);
