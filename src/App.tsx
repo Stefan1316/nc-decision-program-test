@@ -205,7 +205,7 @@ export default function App() {
   }, [liveSummary]);
 
   return (
-    <div className={`h-[100dvh] md:h-auto md:min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden overflow-y-auto md:overflow-y-visible relative overscroll-contain ${
+    <div data-theme={isLight ? 'light' : 'dark'} className={`h-[100dvh] md:h-auto md:min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden overflow-y-auto md:overflow-y-visible relative overscroll-contain ${
       isLight 
         ? 'bg-[#F8FAFC] text-slate-900 selection:bg-neutral-200' 
         : 'bg-[#080A1A] text-[#F8FAFC] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
@@ -340,7 +340,7 @@ export default function App() {
               analysisState={analysisState}
             />
 
-            <div className={`p-4 rounded-2xl border transition-all ${
+            <div className={`nc-surface-section p-4 rounded-2xl border transition-all ${
               isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#0D1127]/95 border-[#1E223D] shadow-lg'
             }`}>
               <div className="grid grid-cols-2 gap-3">
@@ -417,7 +417,7 @@ export default function App() {
         {/* Краткий результат под рабочим столом */}
         <div
           ref={analysisResultRef}
-          className={`p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+          className={`nc-surface-section p-4 sm:p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
             analysisState === 'done'
               ? isLight
                 ? 'ring-2 ring-emerald-200'
@@ -453,7 +453,7 @@ export default function App() {
         </div>
 
         {/* Информационный футер с дисклеймером NC Consulting */}
-        <div className={`p-4 rounded-xl border text-xs leading-relaxed ${
+        <div className={`nc-surface-section p-4 rounded-xl border text-xs leading-relaxed ${
           isLight 
             ? 'bg-white border-neutral-200 text-neutral-600' 
             : 'bg-[#060814] border-[#1E223D] text-slate-400'
