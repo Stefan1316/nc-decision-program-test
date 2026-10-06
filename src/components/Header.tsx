@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header 
-      className={`sticky top-0 z-30 w-full border-b backdrop-blur-xl transition-colors duration-300 ${
+      className={`lg:hidden sticky top-0 z-30 w-full border-b backdrop-blur-xl transition-colors duration-300 ${
         isLight 
           ? 'bg-white/95 border-neutral-200 shadow-sm' 
           : 'bg-[#02040A]/95 border-[#172036]'
