@@ -264,7 +264,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl border transition-all duration-300 overflow-hidden relative ${
+    <div className={`nc-surface-section rounded-2xl border transition-all duration-300 overflow-hidden relative ${
       isLight 
         ? 'bg-white border-neutral-200 shadow-md' 
         : 'bg-[#060814] border-[#172036] shadow-[0_0_50px_-10px_rgba(0,0,0,0.9)]'
