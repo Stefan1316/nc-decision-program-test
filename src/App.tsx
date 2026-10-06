@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { UserQuery } from './types/damu';
 import { evaluatePrograms } from './logic/decisionEngine';
 import { calculateReadiness } from './logic/readiness';
@@ -19,6 +19,8 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+
+const DRAFT_STORAGE_KEY = 'nc-decision:draft:v1';
 
 const INITIAL_QUERY: UserQuery = {
   oked_code: '',
@@ -44,7 +46,15 @@ const INITIAL_QUERY: UserQuery = {
 };
 
 export default function App() {
-  const [query, setQuery] = useState<UserQuery>(INITIAL_QUERY);
+  const [query, setQuery] = useState<UserQuery>(() => {
+    try {
+      const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (!saved) return INITIAL_QUERY;
+      return { ...INITIAL_QUERY, ...JSON.parse(saved) } as UserQuery;
+    } catch {
+      return INITIAL_QUERY;
+    }
+  });
   const [analyzedQuery, setAnalyzedQuery] = useState<UserQuery | null>(null);
   const analysisResultRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +70,7 @@ export default function App() {
   const [isAcceptanceTestsOpen, setIsAcceptanceTestsOpen] = useState(false);
   const [isMobileMapOpen, setIsMobileMapOpen] = useState(false);
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState('');
 
   // Режим работы: 'map' (интерактивная карта Даму), 'search' (поисковик) или 'split' (совмещенный)
   const [activeView, setActiveView] = useState<'map' | 'search' | 'split'>('split');
@@ -67,6 +78,15 @@ export default function App() {
   const t = translations[language];
   const isLight = theme === 'light';
   const isKk = language === 'kk';
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(query));
+      setDraftSavedAt(new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+    } catch {
+      // Local storage may be unavailable in private or embedded preview contexts.
+    }
+  }, [query]);
 
   const handleQueryChange = (updated: Partial<UserQuery>) => {
     setQuery((prev) => ({ ...prev, ...updated }));
@@ -88,6 +108,12 @@ export default function App() {
   const handleReset = () => {
     setQuery(INITIAL_QUERY);
     setAnalyzedQuery(null);
+    setDraftSavedAt('');
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Ignore storage errors in embedded preview contexts.
+    }
   };
 
   const handleToggleTheme = () => {
@@ -184,6 +210,25 @@ export default function App() {
     return JSON.stringify(analyzedQuery) === JSON.stringify(query) ? 'done' : 'stale';
   }, [analyzedQuery, query]);
 
+  const recommendedClarifications = useMemo(() => {
+    const labels = new Set<string>();
+    const rows = [...liveSummary.needs_clarification, ...liveSummary.needs_verification];
+    for (const row of rows) {
+      for (const item of row.missing_inputs || []) {
+        const s = item.toLowerCase();
+        if (s.includes('сумм')) labels.add('Сумма финансирования');
+        else if (s.includes('цел') || s.includes('назначен')) labels.add('Цель финансирования');
+        else if (s.includes('насел') || s.includes('район') || s.includes('город') || s.includes('территор')) labels.add('Точная территория');
+        else if (s.includes('категор') || s.includes('форм') || s.includes('субъект')) labels.add('Форма бизнеса');
+        else if (s.includes('стаж') || s.includes('лет') || s.includes('срок работы')) labels.add('Стаж бизнеса');
+        else if (s.includes('лизинг') || s.includes('инструмент')) labels.add('Финансовый инструмент');
+        else if (s.includes('задолж') || s.includes('просроч')) labels.add('Кредитная / налоговая задолженность');
+        else if (s.includes('реестр') || s.includes('социаль')) labels.add('Статус в реестре');
+      }
+    }
+    return Array.from(labels).slice(0, 6);
+  }, [liveSummary]);
+
   const clarificationCount = useMemo(() => {
     const buckets = new Set<string>();
     const rows = [...liveSummary.needs_clarification, ...liveSummary.needs_verification];
@@ -257,6 +302,11 @@ export default function App() {
               <Sparkles className={`w-3.5 h-3.5 ${isLight ? 'text-amber-500' : 'text-amber-400'}`} />
               <span>{t.banner.tag}</span>
             </div>
+            {draftSavedAt && (
+              <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                Черновик сохранён · {draftSavedAt}
+              </span>
+            )}
 
             {/* Быстрая кнопка открытия отчета */}
             <button
@@ -301,7 +351,7 @@ export default function App() {
           >
             <span className="flex items-center gap-2">
               <Map className="w-4 h-4 text-[#00E5FF]" />
-              {isMobileMapOpen ? 'Скрыть карту' : 'Открыть карту'}
+              {isMobileMapOpen ? 'Скрыть карту' : 'Открыть карту-справочник'}
             </span>
             {isMobileMapOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -340,6 +390,7 @@ export default function App() {
               theme={theme}
               language={language}
               clarificationCount={clarificationCount}
+              recommendedClarifications={recommendedClarifications}
               onAnalyze={handleAnalyze}
               analysisState={analysisState}
             />
@@ -347,6 +398,9 @@ export default function App() {
             <div className={`nc-surface-section p-4 rounded-2xl border transition-all ${
               isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#0D1127]/95 border-[#1E223D] shadow-lg'
             }`}>
+              <div className={`mb-3 text-[11px] font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                Полнота данных · не вероятность одобрения
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
