@@ -165,7 +165,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl p-4 sm:p-7 transition-all duration-300 border ${
+    <div className={`nc-surface-section rounded-2xl p-4 sm:p-7 transition-all duration-300 border ${
       isLight 
         ? 'bg-white border-neutral-200 shadow-sm' 
         : 'bg-[#060814]/95 border-[#172036] shadow-xl backdrop-blur-xl'
