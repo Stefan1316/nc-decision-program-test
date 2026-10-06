@@ -674,7 +674,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="opacity-70">Районов в базе:</span>
-                    <strong className="font-mono text-cyan-400">
+                    <strong className={`font-mono ${isLight ? 'text-sky-800' : 'text-cyan-400'}`}>
                       {getDistrictsByRegion(hoveredProfile.regionId, hoveredProfile.regionName).length}
                     </strong>
                   </div>
@@ -824,7 +824,11 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                         <strong>Справочник отраслей и ОКЭД:</strong> {selectedProfile.regionName}
                       </span>
                     </div>
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-black/20 text-cyan-300 font-bold shrink-0">
+                    <span className={`font-mono text-[10px] px-2 py-0.5 rounded font-bold shrink-0 border ${
+                      isLight
+                        ? 'bg-sky-100 border-sky-200 text-sky-900'
+                        : 'bg-black/20 border-cyan-500/20 text-cyan-300'
+                    }`}>
                       {regionDistricts.length} городов и районов · Все программы Даму
                     </span>
                   </div>
@@ -1344,7 +1348,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                           <div className={`p-2 rounded-lg text-[11px] font-mono leading-tight ${
                             isLight ? 'bg-neutral-50 text-neutral-700' : 'bg-[#02040A] text-slate-300'
                           }`}>
-                            <strong className="text-cyan-400">Приоритет:</strong> {prog.priorityText}
+                            <strong className={isLight ? 'text-sky-800' : 'text-cyan-400'}>Приоритет:</strong> {prog.priorityText}
                           </div>
 
                           <div className="pt-0.5">
@@ -1424,7 +1428,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                         <span>{isKk ? 'ОКЭД сәйкестігі' : 'Статус ОКЭД в регионе'}:</span>
                       </span>
                       {okedFilter && (
-                        <span className="font-mono text-xs text-[#00E5FF]">{okedFilter}</span>
+                        <span className={`font-mono text-xs font-semibold ${isLight ? 'text-sky-800' : 'text-[#00E5FF]'}`}>{okedFilter}</span>
                       )}
                     </div>
                     <p className="text-xs leading-relaxed opacity-90">
