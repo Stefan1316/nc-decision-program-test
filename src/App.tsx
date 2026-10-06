@@ -208,7 +208,7 @@ export default function App() {
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 overflow-x-hidden relative ${
       isLight 
         ? 'bg-[#F8FAFC] text-slate-900 selection:bg-neutral-200' 
-        : 'bg-[#02040A] text-[#F4F7FF] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
+        : 'bg-[#080A1A] text-[#F8FAFC] selection:bg-cyan-500/20 selection:text-[#00E5FF]'
     }`}>
       {/* Декоративное мягкое неоновое фоновое свечение в темной теме */}
       {!isLight && (
@@ -231,12 +231,18 @@ export default function App() {
 
       {/* Основной контент */}
       <div className="flex flex-1 min-w-0">
-        <ProductNav theme={theme} />
+        <ProductNav
+          theme={theme}
+          language={language}
+          onSelectLanguage={handleSelectLanguage}
+          onToggleTheme={handleToggleTheme}
+          onReset={handleReset}
+        />
         <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 py-4 sm:py-6 lg:py-7 space-y-5 sm:space-y-7">
         
         {/* Баннер сервиса */}
         <div className={`text-left space-y-2 border-b pb-5 sm:pb-6 ${
-          isLight ? 'border-neutral-200' : 'border-[#172036]'
+          isLight ? 'border-neutral-200' : 'border-[#1E223D]'
         }`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
@@ -286,7 +292,7 @@ export default function App() {
             className={`w-full nc-touch rounded-xl border px-3.5 py-2.5 flex items-center justify-between text-xs font-bold ${
               isLight
                 ? 'bg-white border-neutral-200 text-neutral-900'
-                : 'bg-[#060814] border-[#172036] text-[#F4F7FF]'
+                : 'bg-[#060814] border-[#1E223D] text-[#F4F7FF]'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -335,7 +341,7 @@ export default function App() {
             />
 
             <div className={`p-4 rounded-2xl border transition-all ${
-              isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/95 border-[#172036] shadow-lg'
+              isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#0D1127]/95 border-[#1E223D] shadow-lg'
             }`}>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -370,19 +376,19 @@ export default function App() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#02040A] border-[#172036] text-slate-300'}`}>
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#080A1A] border-[#1E223D] text-slate-300'}`}>
                   {liveSummary.exact_matches.length} точных
                 </span>
                 <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-amber-950/30 border-amber-500/20 text-amber-300'}`}>
                   {clarificationCount} уточнений
                 </span>
-                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-600' : 'bg-[#02040A] border-[#172036] text-slate-400'}`}>
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-600' : 'bg-[#080A1A] border-[#1E223D] text-slate-400'}`}>
                   {liveSummary.not_applicable.length} исключено
                 </span>
               </div>
 
               {(readiness.analysis_missing.length > 0 || readiness.dossier_missing.length > 0) && (
-                <div className={`mt-3 p-3 rounded-xl border text-[11px] ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#02040A] border-[#172036] text-slate-300'}`}>
+                <div className={`mt-3 p-3 rounded-xl border text-[11px] ${isLight ? 'bg-neutral-50 border-neutral-200 text-neutral-700' : 'bg-[#080A1A] border-[#1E223D] text-slate-300'}`}>
                   <div className="font-bold mb-1">Следующие шаги</div>
                   <div>
                     {readiness.analysis_missing.length > 0
@@ -418,7 +424,7 @@ export default function App() {
                 : 'ring-1 ring-emerald-500/40 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
               : ''
           } ${
-          isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#060814]/90 border-[#172036] shadow-lg'
+          isLight ? 'bg-white border-neutral-200 shadow-sm' : 'bg-[#0D1127]/90 border-[#1E223D] shadow-lg'
         }`}>
           <div>
             <div className={`text-sm font-bold ${isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'}`}>Предварительный результат</div>
@@ -450,7 +456,7 @@ export default function App() {
         <div className={`p-4 rounded-xl border text-xs leading-relaxed ${
           isLight 
             ? 'bg-white border-neutral-200 text-neutral-600' 
-            : 'bg-[#060814] border-[#172036] text-slate-400'
+            : 'bg-[#060814] border-[#1E223D] text-slate-400'
         }`}>
           <strong className={isLight ? 'text-neutral-900' : 'text-slate-200'}>NC Consulting: </strong>
           {t.footer.disclaimer}
