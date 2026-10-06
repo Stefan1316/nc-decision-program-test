@@ -39,13 +39,13 @@ export const Header: React.FC<HeaderProps> = ({
           : 'bg-[#02040A]/95 border-[#172036]'
       }`}
     >
-      <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-[1720px] mx-auto px-3.5 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Бренд NC Consulting */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <NcConsultingLogo className="h-8 sm:h-9 shrink-0" theme={theme} />
           <div className={`h-6 w-px hidden md:block ${isLight ? 'bg-neutral-200' : 'bg-[#172036]'}`} />
           <div className="hidden md:flex flex-col min-w-0">
-            <h1 className={`text-sm font-bold tracking-tight flex items-center gap-2 truncate ${
+            <h1 className={`text-xs sm:text-sm font-bold tracking-tight flex items-center gap-2 truncate ${
               isLight ? 'text-neutral-900' : 'text-[#F4F7FF]'
             }`}>
               <span className="truncate">{t.systemTitle}</span>
