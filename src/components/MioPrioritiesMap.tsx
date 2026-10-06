@@ -57,6 +57,9 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
   const isEn = language === 'en';
   const isZh = language === 'zh';
 
+  // Сводный каталог ОКЭД по территории: по умолчанию свернут, чтобы не перегружать рабочее пространство.
+  const [isDistrictDirectoryOpen, setIsDistrictDirectoryOpen] = useState(false);
+
   // Фильтр по категории программ Даму
   const [programCategoryFilter, setProgramCategoryFilter] = useState<'all' | 'subsidy' | 'guarantee' | 'loan' | 'quota'>('all');
   const [programSearchQuery, setProgramSearchQuery] = useState('');
@@ -812,27 +815,55 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
               {/* 1. ВКЛАДКА: РЕГИОНАЛЬНЫЙ СПРАВОЧНИК: ГОРОДА, РАЙОНЫ И ВСЕ ОКЭД ПО ПРОГРАММАМ ДАМУ */}
               {sidebarTab === 'districts' && (
                 <div className="space-y-3">
-                  {/* Информационный бейдж регионального справочника */}
-                  <div className={`p-2.5 rounded-xl border text-[11px] flex items-center justify-between gap-2 ${
-                    isLight 
-                      ? 'bg-sky-50/80 border-sky-200 text-sky-950' 
-                      : 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300'
+                  {/* Компактный вход в сводный каталог ОКЭД и программ поддержки. */}
+                  <div className={`rounded-xl border overflow-hidden ${
+                    isLight
+                      ? 'bg-sky-50/70 border-sky-200'
+                      : 'bg-cyan-950/20 border-cyan-500/25'
                   }`}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      <span className="truncate">
-                        <strong>Справочник отраслей и ОКЭД:</strong> {selectedProfile.regionName}
-                      </span>
+                    <div className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className={`flex items-center gap-2 text-xs font-bold ${
+                          isLight ? 'text-sky-950' : 'text-cyan-200'
+                        }`}>
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <span>ОКЭД и программы поддержки по территории</span>
+                        </div>
+                        <p className={`mt-1 text-[11px] leading-relaxed ${
+                          isLight ? 'text-slate-600' : 'text-slate-400'
+                        }`}>
+                          Сводный каталог по подключённым маршрутам поддержки: МИО / «Іскер аймақ», «Өрлеу», торговля, АПК, IT, логистика и социальные направления. Это не полный классификатор ОКЭД РК.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsDistrictDirectoryOpen((v) => !v)}
+                        className={`nc-touch shrink-0 px-3 py-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                          isLight
+                            ? 'bg-white border-sky-200 text-sky-900 hover:border-sky-400'
+                            : 'bg-[#0D1127] border-cyan-500/30 text-[#00E5FF] hover:border-cyan-400/60'
+                        }`}
+                        aria-expanded={isDistrictDirectoryOpen}
+                      >
+                        <span>{isDistrictDirectoryOpen ? 'Скрыть каталог' : 'Показать ОКЭД и программы'}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${isDistrictDirectoryOpen ? 'rotate-180' : ''}`} />
+                      </button>
                     </div>
-                    <span className={`font-mono text-[10px] px-2 py-0.5 rounded font-bold shrink-0 border ${
-                      isLight
-                        ? 'bg-sky-100 border-sky-200 text-sky-900'
-                        : 'bg-black/20 border-cyan-500/20 text-cyan-300'
+
+                    <div className={`px-3 py-2 border-t flex flex-wrap gap-2 text-[10px] font-mono ${
+                      isLight ? 'bg-white/60 border-sky-100 text-slate-600' : 'bg-[#080A1A]/60 border-cyan-500/15 text-slate-400'
                     }`}>
-                      {regionDistricts.length} городов и районов · Все программы Даму
-                    </span>
+                      <span>{regionDistricts.length} городов и районов</span>
+                      <span>•</span>
+                      <span>«МИО» = официальные районные приоритеты</span>
+                      <span>•</span>
+                      <span>«Все» = сводный каталог подключённых программ</span>
+                    </div>
                   </div>
 
+                  {isDistrictDirectoryOpen && (
+                    <>
                   {/* Поиск внутри районов выбранного региона */}
                   <div className="relative">
                     <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${
@@ -925,7 +956,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                                 <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
                                   isLight ? 'bg-neutral-100 text-neutral-800' : 'bg-[#02040A] text-cyan-300 border border-cyan-500/30'
                                 }`}>
-                                  {district.supportedOkeds.length} ОКЭД
+                                  {district.supportedOkeds.length} ОКЭД · сводно
                                 </span>
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
                                   isExpanded ? 'rotate-180 text-cyan-400' : 'text-slate-400'
@@ -977,10 +1008,10 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                                       isLight ? 'text-neutral-900' : 'text-[#00E5FF]'
                                     }`}>
                                       <Sparkles className="w-3.5 h-3.5" />
-                                      <span>Справочник отраслей и ОКЭД в «{district.name}»:</span>
+                                      <span>Сводный каталог ОКЭД в «{district.name}»:</span>
                                     </span>
                                     <span className="text-[11px] font-mono opacity-70">
-                                      {district.supportedOkeds.length} отраслей (все программы)
+                                      {district.supportedOkeds.length} ОКЭД · МИО: {district.supportedOkeds.filter((oked) => oked.programTag?.includes('Іскер') || oked.category === 'Приоритет МИО').length}
                                     </span>
                                   </div>
 
@@ -1187,6 +1218,8 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                       </div>
                     )}
                   </div>
+                    </>
+                  )}
                 </div>
               )}
 
