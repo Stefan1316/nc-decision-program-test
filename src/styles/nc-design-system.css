@@ -66,3 +66,89 @@
     overflow: hidden;
   }
 }
+
+
+/* Visual hierarchy for financial workspaces: clear surfaces, restrained contrast. */
+.nc-surface-section,
+.nc-surface-card {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-theme='dark'] .nc-surface-section {
+  background: #0D1127 !important;
+  border-color: #24304C !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.025),
+    0 10px 30px rgba(0,0,0,0.16);
+}
+
+[data-theme='dark'] .nc-surface-card {
+  background: #11172E !important;
+  border-color: #2A3656 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.025),
+    0 8px 24px rgba(0,0,0,0.12);
+}
+
+[data-theme='light'] .nc-surface-section {
+  background: #FFFFFF !important;
+  border-color: #D8E0EA !important;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px rgba(15,23,42,0.035);
+}
+
+[data-theme='light'] .nc-surface-card {
+  background: #FBFCFE !important;
+  border-color: #DDE4EE !important;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.035),
+    0 6px 18px rgba(15,23,42,0.025);
+}
+
+[data-theme='dark'] .nc-surface-section::before,
+[data-theme='light'] .nc-surface-section::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+}
+
+[data-theme='dark'] .nc-surface-section::before {
+  box-shadow: inset 0 0 0 1px rgba(148,163,184,0.025);
+}
+
+[data-theme='light'] .nc-surface-section::before {
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,0.015);
+}
+
+[data-theme='dark'] main {
+  background-image:
+    linear-gradient(rgba(78,103,150,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78,103,150,0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: local;
+}
+
+[data-theme='light'] main {
+  background-image:
+    linear-gradient(rgba(100,116,139,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100,116,139,0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: local;
+}
+
+[data-theme='dark'] main > *,
+[data-theme='light'] main > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 767px) {
+  [data-theme='dark'] main,
+  [data-theme='light'] main {
+    background-image: none;
+  }
+}
