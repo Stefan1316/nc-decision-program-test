@@ -15,6 +15,7 @@ interface QueryInputPanelProps {
   clarificationCount?: number;
   onAnalyze?: () => void;
   analysisState?: 'idle' | 'stale' | 'done';
+  recommendedClarifications?: string[];
 }
 
 export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
@@ -26,7 +27,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
   language = 'ru',
   clarificationCount = 0,
   onAnalyze,
-  analysisState = 'idle'
+  analysisState = 'idle',
+  recommendedClarifications = []
 }) => {
   const [isTerritoryDropdownOpen, setIsTerritoryDropdownOpen] = useState(false);
   const [territorySearchTerm, setTerritorySearchTerm] = useState('');
@@ -205,11 +207,16 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
               type="text"
               value={query.oked_code}
               onChange={(e) => {
+                const lookalikeMap: Record<string, string> = {
+                  'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X'
+                };
                 const normalized = e.target.value
+                  .toUpperCase()
+                  .replace(/[АВЕКМНОРСТХ]/g, (ch) => lookalikeMap[ch] || ch)
                   .replace(/,/g, '.')
                   .replace(/\s+/g, '')
                   .replace(/\.{2,}/g, '.')
-                  .replace(/[^0-9.]/g, '');
+                  .replace(/[^A-Z0-9.]/g, '');
                 onChange({ oked_code: normalized });
               }}
               placeholder={t.step1Placeholder}
@@ -520,7 +527,22 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
 
           {showAdvanced && (
             <>
-            <div className={`mb-3 px-3 py-2 rounded-xl border text-[11px] leading-relaxed ${
+            {recommendedClarifications.length > 0 && (
+              <div className={`mb-3 p-3 rounded-xl border ${isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-950/20 border-amber-500/20'}`}>
+                <div className={`text-xs font-bold mb-2 ${isLight ? 'text-amber-900' : 'text-amber-300'}`}>
+                  Рекомендуется уточнить сейчас
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {recommendedClarifications.map((item) => (
+                    <span key={item} className={`px-2 py-1 rounded-lg border text-[11px] font-medium ${isLight ? 'bg-white border-amber-200 text-slate-700' : 'bg-[#11172E] border-amber-500/20 text-slate-200'}`}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className={`mb-3 px-3 py-2 rounded-xl border text-xs leading-relaxed ${
               isLight ? 'bg-sky-50 border-sky-200 text-sky-800' : 'bg-cyan-950/20 border-cyan-500/20 text-slate-300'
             }`}>
               Эти поля не заполняются автоматически. Укажите только известные параметры — система использует их для уточнения eligibility конкретных программ.
@@ -549,7 +571,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="">Не выбрано</option>
+                  <option value="">Не знаю / нужно проверить</option>
                   <option value="any">Любой тип</option>
                   <option value="republican_city">{t.settlementRepCity}</option>
                   <option value="monotown">{t.settlementMonotown}</option>
@@ -596,7 +618,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="">{t.targetAll}</option>
+                  <option value="">Не знаю / пока не выбрано</option>
                   <option value="Инвестиции">{t.targetInvest}</option>
                   <option value="Оборотные средства">{t.targetWorkingCap}</option>
                   <option value="Рефинансирование">{t.targetRefinance}</option>
@@ -618,7 +640,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="">{t.instrumentAll}</option>
+                  <option value="">Не знаю / пока не выбрано</option>
                   <option value="Субсидирование">{t.instrumentSubsidy}</option>
                   <option value="Гарантирование">{t.instrumentGuarantee}</option>
                   <option value="Льготное кредитование">{t.instrumentLoan}</option>
@@ -640,7 +662,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="">{t.legalFormNotSet}</option>
+                  <option value="">Не знаю / нужно проверить</option>
                   <option value="ИП">Индивидуальный предприниматель (ИП)</option>
                   <option value="ТОО">Товарищество с огр. ответственностью (ТОО)</option>
                   <option value="Сельхозкооператив">Сельхозкооператив (КХ/СПК)</option>
@@ -662,7 +684,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
                       : 'bg-[#060814] border-[#172036] text-[#F4F7FF] focus:border-[#00E5FF]'
                   }`}
                 >
-                  <option value="">{t.businessAgeNotSet}</option>
+                  <option value="">Не знаю / нужно проверить</option>
                   <option value="0">{t.businessAgeNew}</option>
                   <option value="1">{t.businessAge1}</option>
                   <option value="2">{t.businessAge2}</option>
