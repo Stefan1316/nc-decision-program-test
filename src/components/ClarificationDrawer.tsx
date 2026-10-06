@@ -85,7 +85,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               onChange={(e) => onChange({ entity_type: e.target.value as any })}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не указано</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="ИП">ИП (Индивидуальный предприниматель)</option>
               <option value="ТОО">ТОО (Товарищество с огр. ответственностью)</option>
               <option value="Сельхозкооператив">Сельскохозяйственный кооператив</option>
@@ -103,7 +103,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               onChange={(e) => onChange({ purpose: e.target.value as any })}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не указано</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="Инвестиции">Инвестиции (приобретение оборудования, стройка)</option>
               <option value="Оборотные средства">Пополнение оборотных средств (сырье, товары)</option>
               <option value="Рефинансирование">Рефинансирование действующего кредита</option>
@@ -147,7 +147,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               }}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не указано</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="0">Новый бизнес (стартап &lt; 1 года)</option>
               <option value="1">1 полный год (подходит под лизинг)</option>
               <option value="2">2 года</option>
@@ -187,7 +187,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               }}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не проверялось</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="false">Отсутствует (чисто)</option>
               <option value="true">Есть задолженность (ограничение)</option>
             </select>
@@ -206,7 +206,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               }}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не проверялось</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="0">0 дней (просрочек нет)</option>
               <option value="over_60">Свыше 60 дней (запрет для «Өрлеу»)</option>
             </select>
@@ -225,7 +225,7 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
               }}
               className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
             >
-              <option value="">Не указано</option>
+              <option value="">Не знаю / нужно проверить</option>
               <option value="false">Аналогов в РК нет (импорт разрешён)</option>
               <option value="true">Есть аналоги «Сделано в Казахстане»</option>
             </select>
