@@ -49,17 +49,20 @@
 }
 
 @media (max-width: 767px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
-    padding-bottom: calc(132px + env(safe-area-inset-bottom));
-    overflow-y: auto !important;
-    overscroll-behavior-y: auto;
+    padding-bottom: 0;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
   }
 
   #root {
+    height: 100dvh;
     min-height: 100dvh;
-    height: auto;
-    overflow: visible;
+    overflow: hidden;
   }
 }
