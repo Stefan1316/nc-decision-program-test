@@ -117,6 +117,82 @@ for (let i = 0; i < 300; i++) {
   stats.cases++;
 }
 
+// Deterministic regression: national Isker eligibility must not depend on a MIO row.
+const territoryWithout2511 = ISKER_OFFICIAL_RECORDS.find((row) => {
+  const sameTerritoryRows = ISKER_OFFICIAL_RECORDS.filter(
+    (candidate) => candidate.regionId === row.regionId && candidate.territoryId === row.territoryId
+  );
+  return !sameTerritoryRows.some((candidate) => candidate.okedCode === '25.11');
+});
+assert(Boolean(territoryWithout2511), 'Need a territory without MIO 25.11 for Isker national-list regression');
+if (territoryWithout2511) {
+  const nationalQuery: UserQuery = {
+    oked_code: '25.11',
+    location_name: territoryWithout2511.regionName,
+    location_level: 'region',
+    location_role: 'project',
+    region_id: territoryWithout2511.regionId,
+    region_name: territoryWithout2511.regionName,
+    district_id: territoryWithout2511.territoryId,
+    district_name: territoryWithout2511.territoryName,
+    entity_type: 'ТОО',
+    operating_years: 3,
+    purpose: 'Инвестиции',
+    amount_kzt: 100_000_000,
+    settlement_type: '',
+    settlement_type_confirmed: false,
+    instrument_preference: '',
+    tax_arrears: false,
+    overdue_debt_days: 0,
+    social_enterprise_registry: false
+  };
+  const nationalSummary = evaluatePrograms(nationalQuery);
+  const isker = [
+    ...nationalSummary.exact_matches,
+    ...nationalSummary.possible_matches,
+    ...nationalSummary.needs_clarification,
+    ...nationalSummary.needs_verification
+  ].find((r) => r.program.id === 'damu.subsidy.isker_aymak');
+  assert(Boolean(isker), 'Isker national-list OKED 25.11 must remain eligible even without district MIO row');
+  assert(
+    isker?.matched_reasons.some((reason) => reason.includes('общереспубликанский перечень')),
+    'Isker result must explain national-list basis separately from MIO'
+  );
+  assert((isker?.sources.length || 0) >= 1, 'Isker result must hydrate at least one official source');
+}
+
+// Every result should hydrate any resolvable source_ids from the global official source registry.
+const sourceProbe = evaluatePrograms({
+  oked_code: '25.11',
+  location_name: 'Алматинская область',
+  location_level: 'region',
+  location_role: 'project',
+  region_id: 'almaty-region',
+  region_name: 'Алматинская область',
+  district_name: 'Карасайский район',
+  entity_type: 'ТОО',
+  operating_years: 3,
+  purpose: 'Инвестиции',
+  amount_kzt: 100_000_000,
+  settlement_type: '',
+  settlement_type_confirmed: false,
+  instrument_preference: '',
+  tax_arrears: false,
+  overdue_debt_days: 0,
+  social_enterprise_registry: false
+});
+for (const result of [
+  ...sourceProbe.exact_matches,
+  ...sourceProbe.possible_matches,
+  ...sourceProbe.needs_clarification,
+  ...sourceProbe.needs_verification,
+  ...sourceProbe.not_applicable
+]) {
+  if (result.program.source_ids.length > 0) {
+    assert(result.sources.length > 0, `Program ${result.program.id} has source_ids but no hydrated source objects`);
+  }
+}
+
 assert(stats.regions.size >= 15, `Random suite covered too few regions: ${stats.regions.size}`);
 assert(stats.okedSections.size >= 15, `Random suite covered too few OKED sections: ${stats.okedSections.size}`);
 assert(stats.fallbackShown > 0, 'Random suite did not exercise commercial fallback');
