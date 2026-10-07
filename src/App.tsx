@@ -9,6 +9,8 @@ import { ReportExportModal } from './components/ReportExportModal';
 import { KnowledgeBaseModal } from './components/KnowledgeBaseModal';
 import { AcceptanceTestsModal } from './components/AcceptanceTestsModal';
 import { ProductNav } from './components/ProductNav';
+import { AIExpertPanel } from './components/AIExpertPanel';
+import { buildExpertContext } from './aiExpert/buildExpertContext';
 import { ThemeMode, Language, translations } from './i18n/translations';
 import { 
   FileText, 
@@ -70,6 +72,7 @@ export default function App() {
   const [isAcceptanceTestsOpen, setIsAcceptanceTestsOpen] = useState(false);
   const [isMobileMapOpen, setIsMobileMapOpen] = useState(false);
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+  const [isAIExpertOpen, setIsAIExpertOpen] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState('');
 
   // Режим работы: 'map' (интерактивная карта Даму), 'search' (поисковик) или 'split' (совмещенный)
@@ -201,6 +204,11 @@ export default function App() {
     return evaluatePrograms(analyzedQuery || query);
   }, [analyzedQuery, query]);
 
+  const expertContext = useMemo(() => {
+    if (!analyzedQuery) return null;
+    return buildExpertContext(reportSummary);
+  }, [analyzedQuery, reportSummary]);
+
   const readiness = useMemo(() => {
     return calculateReadiness(query, liveSummary);
   }, [query, liveSummary]);
@@ -286,6 +294,8 @@ export default function App() {
           onReset={handleReset}
           isDrawerOpen={isNavDrawerOpen}
           onDrawerOpenChange={setIsNavDrawerOpen}
+          onOpenAIExpert={() => setIsAIExpertOpen(true)}
+          aiExpertAvailable={analysisState === 'done'}
         />
         <main className="flex-1 min-w-0 max-w-[1480px] mx-auto w-full px-3.5 sm:px-6 pt-4 sm:pt-6 lg:pt-7 pb-40 md:pb-8 space-y-5 sm:space-y-7">
         
@@ -496,6 +506,19 @@ export default function App() {
                     : 'Заполните ОКЭД и территорию — система сразу покажет предварительный подбор программ.'}
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+          <button
+            onClick={() => setIsAIExpertOpen(true)}
+            disabled={analysisState !== 'done'}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border ${
+              analysisState !== 'done' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+            } ${
+              isLight ? 'bg-violet-50 hover:bg-violet-100 text-violet-800 border-violet-200' : 'bg-violet-950/40 hover:bg-violet-900/50 text-violet-300 border-violet-500/30'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            AI Expert
+          </button>
           <button
             onClick={handleOpenReport}
             disabled={analysisState !== 'done'}
@@ -508,6 +531,7 @@ export default function App() {
             <FileText className="w-4 h-4" />
             Открыть заключение
           </button>
+          </div>
         </div>
 
         {/* Информационный футер с дисклеймером NC Consulting */}
@@ -542,6 +566,13 @@ export default function App() {
               : 'Провести анализ'}
         </button>
       </div>
+
+      <AIExpertPanel
+        isOpen={isAIExpertOpen}
+        onClose={() => setIsAIExpertOpen(false)}
+        context={expertContext}
+        theme={theme}
+      />
 
       {/* Модальное окно формирования экспертного заключения */}
       <ReportExportModal
