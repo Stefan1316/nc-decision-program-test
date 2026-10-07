@@ -3,10 +3,11 @@ name: NC Decision quality gate
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feature/ai-expert-damu-v1]
     paths:
       - 'src/**'
       - 'scripts/random_funding_smoke.ts'
+      - 'scripts/ai_expert_contract_smoke.ts'
       - 'package.json'
       - '.github/workflows/quality-gate.yml'
 
@@ -26,3 +27,5 @@ jobs:
         run: npm run lint
       - name: Randomized funding routing smoke tests
         run: npm run test:smoke
+      - name: AI Expert contract smoke tests
+        run: npm run test:ai-expert
