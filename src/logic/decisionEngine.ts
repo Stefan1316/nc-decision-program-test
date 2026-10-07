@@ -2,6 +2,7 @@ import { damuKnowledgeBase } from '../data/damuDatabase';
 import { DamuProgram, ProgramMatchResult, ProgramStatus, UserQuery } from '../types/damu';
 import { checkOrleuEligibility } from '../data/orleuPriorityOkeds';
 import { checkIskerDistrictEligibility } from './iskerEligibility';
+import { checkIskerNationalEligibility } from './iskerNationalEligibility';
 
 export interface EvaluationSummary {
   query: UserQuery;
@@ -92,11 +93,7 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
 
     // 1. Geography evaluation
     if (prog.id === 'damu.subsidy.isker_aymak') {
-      if (isRepCity) {
-        restrictions.push(`Программа «Іскер аймақ» действует исключительно в регионах, моногородах и малых городах. Города республиканского значения (${query.location_name}) исключены из программы.`);
-      } else {
-        matched_reasons.push(`Территория проекта (${query.location_name || 'Регион'}) соответствует условиям программы «Іскер аймақ».`);
-      }
+      matched_reasons.push(`Территория проекта: ${query.location_name || query.region_name || 'не указана'}. Отраслевое соответствие «Іскер аймақ» проверяется отдельно по общереспубликанскому перечню и дополнительным приоритетам МИО.`);
     }
 
     // 2. Settlement type evaluation
@@ -122,62 +119,67 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       }
     } 
     
-    // Isker Aymak: точная проверка по региону + району/городу + точному коду ОКЭД
+    // Isker Aymak: two independent eligibility dimensions.
+    // 1) nationwide program OKED list; 2) additional exact regional priorities of MIO.
     else if (prog.id === 'damu.subsidy.isker_aymak') {
-      const isExcluded23 = cleanCode.startsWith('23.63');
-      const isExcluded24 = ['24.10', '24.46', '24.51', '24.52'].some(ex => cleanCode.startsWith(ex));
+      const nationalCheck = checkIskerNationalEligibility(cleanCode);
 
-      if (isExcluded23) {
+      if (nationalCheck.excluded) {
         okedMatchLevel = 'excluded';
-        restrictions.push('ОКЭД 23.63 (Производство товарного бетона) прямо исключен из программы «Іскер аймақ».');
-      } else if (isExcluded24) {
-        okedMatchLevel = 'excluded';
-        restrictions.push(`ОКЭД ${cleanCode} (первичная металлургия) исключен из программы «Іскер аймақ».`);
+        restrictions.push(nationalCheck.reason);
+      } else if (nationalCheck.matched) {
+        okedMatchLevel = 'exact';
+        matched_reasons.push(nationalCheck.reason);
+        matched_reasons.push('Соответствие подтверждено по общереспубликанскому перечню программы; наличие отдельной записи в районной матрице МИО для этого основания не требуется.');
       } else if (query.region_id) {
-        const iskerCheck = checkIskerDistrictEligibility(
+        const mioCheck = checkIskerDistrictEligibility(
           query.region_id,
           query.district_name,
           cleanCode
         );
 
         if (query.district_name) {
-          if (!iskerCheck.districtFound) {
+          if (!mioCheck.districtFound) {
             okedMatchLevel = 'verification_needed';
             missing_inputs.push('Проверка выбранного города/района по официальной матрице МИО');
-            matched_reasons.push(iskerCheck.reason);
-          } else if (iskerCheck.matched) {
+            matched_reasons.push(mioCheck.reason);
+          } else if (mioCheck.matched) {
             okedMatchLevel = 'exact';
-            matched_reasons.push(iskerCheck.reason);
-          } else if (iskerCheck.classificationNeedsVerification) {
+            matched_reasons.push('Общереспубликанский перечень не дал совпадения, но найден дополнительный региональный приоритет МИО.');
+            matched_reasons.push(mioCheck.reason);
+          } else if (mioCheck.classificationNeedsVerification) {
             okedMatchLevel = 'verification_needed';
-            matched_reasons.push(iskerCheck.reason);
+            matched_reasons.push(mioCheck.reason);
             missing_inputs.push('Подтвердить классификационную связь детального ОКЭД с кодом, указанным в официальной матрице МИО');
             clarificationSet.add('oked');
           } else {
             okedMatchLevel = 'excluded';
-            restrictions.push(iskerCheck.reason);
+            restrictions.push(nationalCheck.reason);
+            restrictions.push(mioCheck.reason);
           }
         } else {
-          if (iskerCheck.matched) {
+          if (mioCheck.matched) {
             okedMatchLevel = 'compatible';
-            matched_reasons.push(iskerCheck.reason);
-            missing_inputs.push('Конкретный город/район для точной проверки «Іскер аймақ»');
+            matched_reasons.push('Общереспубликанский перечень не дал совпадения; в выбранном регионе есть точные дополнительные приоритеты МИО.');
+            matched_reasons.push(mioCheck.reason);
+            missing_inputs.push('Конкретный город/район для точной проверки дополнительного приоритета МИО');
             clarificationSet.add('location');
-          } else if (iskerCheck.classificationNeedsVerification) {
+          } else if (mioCheck.classificationNeedsVerification) {
             okedMatchLevel = 'verification_needed';
-            matched_reasons.push(iskerCheck.reason);
+            matched_reasons.push(mioCheck.reason);
             missing_inputs.push('Конкретный город/район и подтверждение классификационной связи ОКЭД');
             clarificationSet.add('location');
             clarificationSet.add('oked');
           } else {
             okedMatchLevel = 'excluded';
-            restrictions.push(iskerCheck.reason);
+            restrictions.push(nationalCheck.reason);
+            restrictions.push(mioCheck.reason);
           }
         }
       } else {
         okedMatchLevel = 'verification_needed';
-        missing_inputs.push('Регион и конкретный город/район для проверки матрицы «Іскер аймақ»');
-        matched_reasons.push('Для программы «Іскер аймақ» требуется территориальная проверка по матрице МИО.');
+        matched_reasons.push(nationalCheck.reason);
+        missing_inputs.push('Регион и конкретный город/район для проверки дополнительных приоритетов МИО');
         clarificationSet.add('location');
       }
     }
@@ -492,8 +494,13 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     }
 
     // Geography completeness: regional programs that depend on a district must have it selected.
-    if (prog.id === 'damu.subsidy.isker_aymak' && query.region_id && !query.district_name) {
-      missing_inputs.push('Конкретный район/город для точной территориальной проверки программы «Іскер аймақ»');
+    if (
+      prog.id === 'damu.subsidy.isker_aymak' &&
+      query.region_id &&
+      !query.district_name &&
+      !checkIskerNationalEligibility(cleanCode).matched
+    ) {
+      missing_inputs.push('Конкретный район/город для проверки дополнительного регионального приоритета МИО');
       clarificationSet.add('location');
     }
 
@@ -555,15 +562,24 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       status_label_ru = 'Возможное соответствие';
     }
 
+    const hydratedSources = Array.from(
+      new Map(
+        [
+          ...(prog.sources || []),
+          ...damuKnowledgeBase.sources.filter((source) => prog.source_ids.includes(source.source_id))
+        ].map((source) => [source.source_id, source])
+      ).values()
+    );
+
     const result: ProgramMatchResult = {
-      program: prog,
+      program: { ...prog, sources: hydratedSources },
       status,
       status_label_ru,
       matched_reasons,
       restrictions,
       missing_inputs,
       confidence: prog.data_quality === 'high' ? 'high' : 'medium',
-      sources: prog.sources
+      sources: hydratedSources
     };
 
     if (status === 'exact_match') exact_matches.push(result);
