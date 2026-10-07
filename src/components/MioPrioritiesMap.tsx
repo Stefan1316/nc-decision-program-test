@@ -948,7 +948,7 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                                 <div className={`text-[11px] font-mono mt-0.5 truncate ${
                                   isLight ? 'text-neutral-500' : 'text-slate-400'
                                 }`}>
-                                  Центр: {district.center} · Конечная ставка: <strong className={isLight ? 'text-neutral-800' : 'text-emerald-400'}>12.6%</strong> · Гарантия: <strong className={isLight ? 'text-neutral-800' : 'text-cyan-400'}>до 85%</strong>
+                                  Центр: {district.center} · <strong className={isLight ? 'text-neutral-700' : 'text-slate-300'}>Условия финансирования — по выбранной программе</strong>
                                 </div>
                               </div>
 
@@ -980,25 +980,12 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                                   {district.specialization}
                                 </div>
 
-                                {/* Финансовые льготы района (ставка, субсидия, гарантия) */}
-                                <div className="grid grid-cols-2 gap-2 text-center text-xs font-mono">
-                                  <div className={`p-2 rounded-lg border ${
-                                    isLight ? 'bg-neutral-50 border-neutral-200' : 'bg-[#02040A] border-[#172036]'
-                                  }`}>
-                                    <span className="text-[10px] block opacity-70">Конечная ставка заемщика:</span>
-                                    <strong className={isLight ? 'text-sky-700 font-bold' : 'text-[#00E5FF] font-bold'}>
-                                      12.6% годовых
-                                    </strong>
-                                  </div>
-
-                                  <div className={`p-2 rounded-lg border ${
-                                    isLight ? 'bg-neutral-50 border-neutral-200' : 'bg-[#02040A] border-[#172036]'
-                                  }`}>
-                                    <span className="text-[10px] block opacity-70">Гарантия Фонда «Даму»:</span>
-                                    <strong className={isLight ? 'text-emerald-700 font-bold' : 'text-emerald-400 font-bold'}>
-                                      до 85%
-                                    </strong>
-                                  </div>
+                                {/* Условия зависят от конкретной программы; район сам по себе не задаёт ставку или гарантию. */}
+                                <div className={`p-2.5 rounded-lg border text-xs leading-relaxed ${
+                                  isLight ? 'bg-sky-50 border-sky-200 text-slate-700' : 'bg-cyan-950/20 border-cyan-500/20 text-slate-300'
+                                }`}>
+                                  <strong className={isLight ? 'text-sky-900' : 'text-cyan-300'}>Финансовые условия:</strong>{' '}
+                                  ставка, лимит, субсидия и гарантия показываются после выбора конкретной программы и проверки её действующих условий.
                                 </div>
 
                                 {/* СПИСОК ПРИОРИТЕТНЫХ ОКЭД В ЭТОМ РАЙОНЕ */}
@@ -1168,13 +1155,11 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                                             </div>
 
                                             <div className="flex flex-col items-end gap-1 shrink-0">
-                                              {oked.rateText && (
-                                                <span className={`font-mono text-[11px] font-bold px-1.5 py-0.5 rounded ${
-                                                  isMatch 
-                                                    ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200' 
-                                                    : isLight ? 'bg-neutral-200 text-neutral-800' : 'bg-cyan-950 text-[#00E5FF]'
+                                              {oked.programTag && (
+                                                <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${
+                                                  isLight ? 'bg-neutral-100 text-neutral-600' : 'bg-[#11172E] text-slate-400'
                                                 }`}>
-                                                  {oked.rateText}
+                                                  условия по программе
                                                 </span>
                                               )}
                                               <span className={`text-[10px] font-mono underline ${
