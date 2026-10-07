@@ -24,6 +24,8 @@ interface ProductNavProps {
   onReset: () => void;
   isDrawerOpen: boolean;
   onDrawerOpenChange: (open: boolean) => void;
+  onOpenAIExpert?: () => void;
+  aiExpertAvailable?: boolean;
 }
 
 const desktopItems = [
@@ -33,7 +35,7 @@ const desktopItems = [
   { label: 'Проекты', icon: FolderKanban, comingSoon: true },
   { label: 'Программы', icon: Landmark, comingSoon: true },
   { label: 'База знаний', icon: Database, comingSoon: true },
-  { label: 'AI Expert', icon: Bot, ai: true, comingSoon: true },
+  { label: 'AI Expert', icon: Bot, ai: true, comingSoon: false },
   { label: 'История', icon: History, comingSoon: true }
 ];
 
@@ -44,7 +46,9 @@ export const ProductNav: React.FC<ProductNavProps> = ({
   onToggleTheme,
   onReset,
   isDrawerOpen,
-  onDrawerOpenChange
+  onDrawerOpenChange,
+  onOpenAIExpert,
+  aiExpertAvailable = false
 }) => {
   const isLight = theme === 'light';
 
@@ -63,7 +67,10 @@ export const ProductNav: React.FC<ProductNavProps> = ({
               <button
                 key={label}
                 type="button"
-                aria-disabled={!active}
+                aria-disabled={!active && label !== 'AI Expert'}
+                onClick={() => {
+                  if (label === 'AI Expert' && aiExpertAvailable) onOpenAIExpert?.();
+                }}
                 className={`relative w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-semibold border transition-all ${
                   active
                     ? isLight
@@ -78,6 +85,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${ai && !active ? 'text-[#8B5CFF]' : ''}`} />
                 <span className="truncate">{label}</span>
                 {comingSoon && <span className={`ml-auto px-1.5 py-0.5 text-[9px] rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>Скоро</span>}
+                {label === 'AI Expert' && !aiExpertAvailable && <span className={`ml-auto px-1.5 py-0.5 text-[9px] rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>После анализа</span>}
                 {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10B981]" />}
                 {ai && <span className="ml-auto px-1.5 py-0.5 text-[8px] rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">AI</span>}
               </button>
@@ -158,7 +166,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
               key={label}
               type="button"
               aria-disabled={!active}
-              onClick={() => label === 'Ещё' && onDrawerOpenChange(true)}
+              onClick={() => { if (label === 'Ещё') onDrawerOpenChange(true); if (label === 'AI Expert' && aiExpertAvailable) onOpenAIExpert?.(); }}
               className={`min-h-[48px] rounded-lg flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
               active
                 ? isLight ? 'text-neutral-950 bg-neutral-100' : 'text-[#00E5FF] bg-cyan-950/30'
@@ -215,7 +223,13 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                   <button
                     key={label}
                     type="button"
-                    onClick={() => active && onDrawerOpenChange(false)}
+                    onClick={() => {
+                      if (active) onDrawerOpenChange(false);
+                      if (label === 'AI Expert' && aiExpertAvailable) {
+                        onDrawerOpenChange(false);
+                        onOpenAIExpert?.();
+                      }
+                    }}
                     className={`w-full min-h-[46px] flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold border transition-all ${
                       active
                         ? isLight
@@ -229,6 +243,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                     <Icon className={`w-4 h-4 shrink-0 ${ai ? 'text-[#8B5CFF]' : ''}`} />
                     <span className="flex-1">{label}</span>
                     {comingSoon && <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>Скоро</span>}
+                    {label === 'AI Expert' && !aiExpertAvailable && <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-slate-800/70 border-slate-700 text-slate-400'}`}>После анализа</span>}
                     {active && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
                     {ai && <span className="text-[9px] px-1.5 py-0.5 rounded border border-violet-500/30 text-violet-300">AI</span>}
                   </button>
