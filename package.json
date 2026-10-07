@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "sync:oked": "node scripts/sync_oked_master.mjs",
-    "test:smoke": "tsx scripts/random_funding_smoke.ts"
+    "test:smoke": "tsx scripts/random_funding_smoke.ts",
+    "test:ai-expert": "tsx scripts/ai_expert_contract_smoke.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
